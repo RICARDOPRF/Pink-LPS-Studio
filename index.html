@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#050b14" />
-  <title>Pink LPS Studio · V9</title>
+  <title>Pink LPS Studio · V10</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,7 @@
 <body class="v3"><canvas id="fxCanvas" aria-hidden="true"></canvas>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <div class="app-shell">
-    <header class="topbar glass"><div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio · V9</small></div></div><div class="top-actions"><span id="systemBadge" class="badge">Pink online</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div></header>
+    <header class="topbar glass"><div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio · V10</small></div></div><div class="top-actions"><span id="systemBadge" class="badge">Pink online</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div></header>
     <main class="workspace">
       <aside class="assistant-panel glass">
         <div id="pinkStage" class="pink-stage" data-state="idle" aria-live="polite">
@@ -23,15 +23,15 @@
           <div class="state-pill"><i></i><span id="avatarStateText">Pronta</span></div>
           <div class="voice-signature"><span>VOICE</span><strong>Roberta · ElevenLabs</strong></div>
         </div>
-        <div class="assistant-copy"><p class="eyebrow">PINK · AI OPERATING STUDIO</p><h1>Talk. Build. Operate.</h1><p class="lede">Central inteligente da Lean Performance Solutions. Converse por voz, abra sistemas e consulte dados reais dos painéis conectados.</p></div>
-        <div class="status-grid"><div class="status-card"><span class="status-icon">🎙️</span><div><small>Voz</small><strong id="voiceStatus">ElevenLabs pronto · Roberta</strong></div></div><div class="status-card"><span class="status-icon">📊</span><div><small>Painéis</small><strong>FS BECCS · consulta ao vivo</strong></div></div><div class="status-card"><span class="status-icon">🧠</span><div><small>Cérebro auxiliar</small><strong id="nvidiaStatus">NVIDIA NIM conectado via Supabase</strong></div></div></div>
+        <div class="assistant-copy"><p class="eyebrow">PINK · AI OPERATING STUDIO</p><h1>Talk. Build. Operate.</h1><p class="lede">Central inteligente da Lean Performance Solutions. Converse por voz, abra sistemas, consulte dados reais e opere aplicações conectadas.</p></div>
+        <div class="status-grid"><div class="status-card"><span class="status-icon">🎙️</span><div><small>Voz</small><strong id="voiceStatus">ElevenLabs pronto · Roberta</strong></div></div><div class="status-card"><span class="status-icon">🧭</span><div><small>Operação</small><strong>Painéis + Praia & Movimento</strong></div></div><div class="status-card"><span class="status-icon">🧠</span><div><small>Cérebro auxiliar</small><strong id="nvidiaStatus">NVIDIA NIM conectado via Supabase</strong></div></div></div>
         <section class="voice-box"><div class="section-title"><div><small>CONVERSA EM TEMPO REAL</small><h2>Falar com a Pink</h2></div><span class="live-dot"></span></div><div id="voiceWidgetMount" class="widget-mount"><div class="empty-state"><div class="mic-orb">🎙️</div><strong>Pink conectada ao ElevenLabs</strong><p>Agente configurado com a voz Roberta. Toque para liberar o microfone e começar.</p><button class="primary-btn" disabled>Carregando voz…</button></div></div></section>
       </aside>
       <section class="studio-panel">
         <div class="studio-header glass"><div><p class="eyebrow">LIVE ORCHESTRATION</p><h2>Pink em execução</h2></div><div class="studio-actions"><button id="clearBtn" class="secondary-btn">Limpar</button><button id="demoBtn" class="primary-btn">Testar animação</button></div></div>
         <div class="agent-strip glass" aria-label="Estados da Pink"><div class="agent-node active" data-node="listen"><i></i><span>OUVIR</span></div><b>→</b><div class="agent-node" data-node="think"><i></i><span>PENSAR</span></div><b>→</b><div class="agent-node" data-node="speak"><i></i><span>FALAR</span></div><b>→</b><div class="agent-node" data-node="act"><i></i><span>EXECUTAR</span></div></div>
-        <section class="command-console glass"><div class="section-title"><div><small>HISTÓRICO</small><h2>Conversa da sessão</h2></div><span class="badge subtle">ElevenLabs + NVIDIA NIM + Painéis LPS</span></div><div id="timeline" class="timeline"><div class="timeline-item assistant"><div class="avatar-mini">P</div><div class="bubble"><strong>Pink</strong><p>Estou pronta. Posso abrir os sistemas da LPS e consultar o Painel de Bordo FS BECCS.</p><time>agora</time></div></div></div><div class="quick-commands"><button data-command="Pink, abre o Painel de Bordo do BECCS e me fala os avanços e produtividades.">BECCS ao vivo</button><button data-command="Pink, abre o site da LPS.">Abrir LPS</button><button data-command="Pink, abre a Calculadora do Planejador.">Calculadora</button><button data-command="Pink, abre o DuooPlanning.">DuooPlanning</button><button data-command="Pink, abre o LPS Prospect.">LPS Prospect</button></div></section>
-        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div id="previewAddress" class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-orb"><span></span><span></span><span></span></div><h3 id="previewTitle">Pink V9 · Central LPS</h3><p id="previewText">Experimente: “Pink, entra no Painel de Bordo do BECCS e me fala os avanços e produtividades”. A Pink abre o painel real, lê os KPIs carregados e responde por voz.</p><div class="flow"><span>🎙️ Ouvindo</span><b>→</b><span>📊 Painel</span><b>→</b><span>🧠 NVIDIA</span><b>→</b><span>🔊 Roberta</span></div></div></div></section>
+        <section class="command-console glass"><div class="section-title"><div><small>HISTÓRICO</small><h2>Conversa da sessão</h2></div><span class="badge subtle">ElevenLabs + NVIDIA NIM + LPS Routers</span></div><div id="timeline" class="timeline"><div class="timeline-item assistant"><div class="avatar-mini">P</div><div class="bubble"><strong>Pink</strong><p>Estou pronta. Posso abrir painéis, consultar indicadores e operar a Praia & Movimento.</p><time>agora</time></div></div></div><div class="quick-commands"><button data-command="Pink, abre o Painel de Bordo do BECCS.">Abrir BECCS</button><button data-command="Pink, abre o Painel de Bordo do Forno Panela.">Forno Panela</button><button data-command="Pink, abre a Praia & Movimento.">Praia & Movimento</button><button data-command="Pink, quanto eu vendi hoje na Praia & Movimento?">Vendas de hoje</button><button data-command="Pink, abre o site da LPS.">Abrir LPS</button></div></section>
+        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div id="previewAddress" class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-orb"><span></span><span></span><span></span></div><h3 id="previewTitle">Pink V10 · Central Operacional</h3><p id="previewText">Abra um Painel de Bordo e continue perguntando sobre ele, ou peça vendas, lucro e alterações de produtos da Praia & Movimento.</p><div class="flow"><span>🎙️ Ouvindo</span><b>→</b><span>🧭 Contexto</span><b>→</b><span>🧠 NVIDIA</span><b>→</b><span>🔊 Roberta</span></div></div></div></section>
       </section>
     </main>
   </div>
@@ -46,10 +46,12 @@
       <button id="wakeSettingsBtn" type="button" class="wake-link">Detalhes da voz</button>
     </div>
   </div>
-  <dialog id="settingsDialog" class="settings-dialog"><form method="dialog" class="settings-card"><div class="settings-head"><div><small>CONFIGURAÇÃO</small><h2>Integrações da Pink</h2></div><button value="cancel" class="icon-btn">✕</button></div><p>A Pink usa o <strong>ElevenLabs Agents</strong> para voz, <strong>NVIDIA NIM</strong> via Supabase e agora consulta o <strong>Painel de Bordo FS BECCS</strong> diretamente na interface publicada.</p><label>Agente ElevenLabs<input type="text" value="agent_0001m2brk3bxes2vwzc26rpzqww4" readonly /></label><label>Voz<input type="text" value="Roberta · ElevenLabs" readonly /></label><label>NVIDIA<input type="text" value="NVIDIA NIM · meta/llama-3.3-70b-instruct" readonly /></label><label>Painel conectado<input type="text" value="FS BECCS · avanço + produtividade ao vivo" readonly /></label><button id="testNvidiaBtn" type="button" class="secondary-btn">Testar conexão NVIDIA</button><div class="settings-note">A API Key privada da NVIDIA fica no Supabase. A Pink lê os KPIs calculados pelo próprio painel BECCS; ela não recalcula os números em paralelo.</div><div class="dialog-actions"><button value="cancel" type="submit" class="primary-btn">Fechar</button></div></form></dialog>
-  <script src="pink-evolution.js?v=9"></script>
-  <script src="pink-nvidia.js?v=9"></script>
-  <script src="pink-core.js?v=9"></script>
-  <script src="app.js?v=9"></script>
+  <dialog id="settingsDialog" class="settings-dialog"><form method="dialog" class="settings-card"><div class="settings-head"><div><small>CONFIGURAÇÃO</small><h2>Integrações da Pink</h2></div><button value="cancel" class="icon-btn">✕</button></div><p>A Pink usa <strong>ElevenLabs</strong> para voz, <strong>NVIDIA NIM</strong> via Supabase, a <strong>Gestão de Obras</strong> como registro rápido de Painéis de Bordo e a administração real da <strong>Praia & Movimento</strong> para vendas e catálogo.</p><label>Voz<input type="text" value="Roberta · ElevenLabs" readonly /></label><label>NVIDIA<input type="text" value="NVIDIA NIM · meta/llama-3.3-70b-instruct" readonly /></label><label>Painéis<input type="text" value="Gestão de Obras → painel publicado → contexto ativo" readonly /></label><label>Loja<input type="text" value="Praia & Movimento · vendas + lucro + catálogo" readonly /></label><button id="testNvidiaBtn" type="button" class="secondary-btn">Testar conexão NVIDIA</button><div class="settings-note">Consultas são somente leitura. Alterações reais na loja exigem confirmação explícita antes de salvar.</div><div class="dialog-actions"><button value="cancel" type="submit" class="primary-btn">Fechar</button></div></form></dialog>
+  <script src="pink-evolution.js?v=10"></script>
+  <script src="pink-nvidia.js?v=10"></script>
+  <script src="pink-core.js?v=10"></script>
+  <script src="pink-panel-router.js?v=10"></script>
+  <script src="pink-store-router.js?v=10"></script>
+  <script src="app.js?v=10"></script>
 </body>
 </html>
