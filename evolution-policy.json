@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "mode": "safe-evolution",
+  "autonomous_allowed": [
+    "observe_runtime_signals",
+    "aggregate_non_sensitive_feedback",
+    "identify_repeated_failures",
+    "ask_gemini_for_independent_review",
+    "propose_improvements",
+    "create_isolated_evolution_branch",
+    "run_non_destructive_tests",
+    "open_draft_pull_request"
+  ],
+  "explicit_user_approval_required": [
+    "merge_to_main",
+    "production_publish",
+    "delete_or_overwrite_user_data",
+    "change_billing_or_paid_services",
+    "rotate_or_expose_credentials",
+    "weaken_security_or_access_controls"
+  ],
+  "forbidden": [
+    "store_private_api_keys_in_public_client_code",
+    "self_approve_production_changes",
+    "disable_audit_trail",
+    "hide_failures_or_claim_unverified_actions"
+  ]
+}

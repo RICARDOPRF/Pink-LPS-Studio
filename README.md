@@ -41,3 +41,7 @@ A camada de edição real não deve colocar token do GitHub no navegador. O cami
 ## Segurança
 
 Produção deve ser protegida por confirmação explícita. Exclusões, publicação, alterações destrutivas e operações sensíveis nunca devem ser executadas apenas por inferência da conversa.
+
+## Evolution Core
+
+Pink now includes a safe self-improvement layer. Runtime signals generate improvement candidates locally, Gemini provides independent review, and autonomous development is limited to isolated branches/draft PRs. Production merges remain approval-gated. See `EVOLUTION.md` and `evolution-policy.json`.
