@@ -2,55 +2,59 @@
 
 Interface inicial da **Pink**, assistente de voz da Lean Performance Solutions para desenvolvimento conversacional de aplicativos.
 
-## Objetivo
+## Direção do produto
 
-Permitir um fluxo no qual o usuário fala normalmente com a Pink e, progressivamente, ela possa:
+Pink é uma IA operacional orientada por voz: conversa, entende contexto, coordena outros modelos, abre e apresenta sistemas, prepara melhorias de software e só publica produção após aprovação explícita.
+
+## Roadmap oficial de evolução
+
+A evolução agora é organizada por fases no GitHub. Consulte [`docs/EVOLUTION_ROADMAP.md`](docs/EVOLUTION_ROADMAP.md).
+
+Foco atual: **Core Intelligence + 3D Presence**, preservando segurança, proveniência e clean-room para referências externas.
+
+## Fluxo-alvo
 
 1. entender uma solicitação por voz;
 2. localizar o projeto correto;
-3. criar uma branch de laboratório;
+3. criar uma branch de laboratório/evolução;
 4. editar o código com segurança;
-5. executar validações;
-6. abrir um preview do aplicativo;
+5. executar validações e testes;
+6. abrir um preview;
 7. apresentar por voz o que mudou;
 8. publicar somente após aprovação explícita.
 
-## Estado atual — V1
+## Componentes já em evolução
 
-- interface web responsiva;
-- avatar da Pink;
-- integração preparada para o Vapi Web Widget;
-- Assistant ID da Pink configurado;
-- chave pública do Vapi **não é versionada**: o usuário informa uma Public API Key uma única vez e ela fica apenas no `localStorage` do navegador;
-- área de histórico de comandos e simulação;
-- área reservada para preview de aplicativos.
+- Evolution Core seguro;
+- GPT coordenador + Gemini Reviewer;
+- Awareness;
+- Planner / Recovery;
+- Approval Engine;
+- Context Memory;
+- Health / Self-Test;
+- Preflight;
+- Run Ledger;
+- Recall Gate;
+- Voice Watchdog / Echo Guard;
+- campo neural 3D original da Pink.
 
-## Configuração da voz
+## Referências externas
 
-1. No Vapi Dashboard, crie/copiei uma **Public API Key**.
-2. Restrinja a chave ao domínio do GitHub Pages e à assistente Pink.
-3. Abra o Pink LPS Studio, clique na engrenagem e informe a chave pública.
-4. Nunca coloque a Private API Key em `index.html`, `app.js` ou qualquer arquivo público.
-
-Assistant ID atual: `5db8d17f-e467-4275-9531-9ccd2c983ff1`
-
-## Próxima etapa
-
-A camada de edição real não deve colocar token do GitHub no navegador. O caminho recomendado é um backend seguro (por exemplo Cloudflare Worker) que receba comandos autorizados, use GitHub/Composio no servidor e crie branches/previews de laboratório.
+Arquivos/repositórios enviados como inspiração passam primeiro pelo protocolo [`docs/REFERENCE_INTAKE.md`](docs/REFERENCE_INTAKE.md). Projetos não comerciais, proprietários ou com licença incerta são usados apenas como referência arquitetural e recebem implementação clean-room.
 
 ## Segurança
 
-Produção deve ser protegida por confirmação explícita. Exclusões, publicação, alterações destrutivas e operações sensíveis nunca devem ser executadas apenas por inferência da conversa.
+- Private API keys nunca devem ser colocadas no navegador ou versionadas.
+- Produção é protegida por confirmação explícita.
+- Exclusões, publicação, cobrança, credenciais e alterações destrutivas não podem ser executadas autonomamente.
+- Código gerado por IA não deve rodar diretamente na máquina do usuário; use sandbox/container e trilha de auditoria.
 
-## Evolution Core
+## Voz
 
-Pink now includes a safe self-improvement layer. Runtime signals generate improvement candidates locally, Gemini provides independent review, and autonomous development is limited to isolated branches/draft PRs. Production merges remain approval-gated. See `EVOLUTION.md` and `evolution-policy.json`.
+A Pink usa Vapi para conversa em tempo real e ElevenLabs/Roberta como voz configurada. No iPhone, permissões de áudio/microfone devem respeitar o gesto explícito exigido pelo navegador.
 
-## Pink OS Core — Jarvis architecture extraction
+## Branch de evolução atual
 
-A clean-room compatibility layer now brings five useful concepts into Pink: Awareness, Planner/Recovery, Approval, Context Memory and Health/Self-Test. The implementation is browser-safe and intentionally excludes generated-code execution, automatic package installation and unrestricted computer control. See `JARVIS_IMPORT_01.md`.
+`evolution/jarvis-core-import-01`
 
-
-## Pink Evolution Import 02 — 3D & Resilience
-
-The evolution branch now stages an original Three.js neural field around Pink plus read-only preflight, voice health watchdog, echo suppression, relevant-memory recall and bounded autonomous run tracking. Reference projects with non-commercial/proprietary licenses were used only for architectural study; implementation is clean-room. See `docs/JARVIS_IMPORT_02.md` and `docs/JARVIS_IMPORT_02_SECURITY.md`.
+Mudanças permanecem em draft/preview até revisão e decisão explícita de merge para `main`.
