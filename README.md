@@ -49,3 +49,8 @@ Pink now includes a safe self-improvement layer. Runtime signals generate improv
 ## Pink OS Core — Jarvis architecture extraction
 
 A clean-room compatibility layer now brings five useful concepts into Pink: Awareness, Planner/Recovery, Approval, Context Memory and Health/Self-Test. The implementation is browser-safe and intentionally excludes generated-code execution, automatic package installation and unrestricted computer control. See `JARVIS_IMPORT_01.md`.
+
+
+## Pink Evolution Import 02 — 3D & Resilience
+
+The evolution branch now stages an original Three.js neural field around Pink plus read-only preflight, voice health watchdog, echo suppression, relevant-memory recall and bounded autonomous run tracking. Reference projects with non-commercial/proprietary licenses were used only for architectural study; implementation is clean-room. See `docs/JARVIS_IMPORT_02.md` and `docs/JARVIS_IMPORT_02_SECURITY.md`.
