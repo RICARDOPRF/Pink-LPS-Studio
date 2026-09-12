@@ -1,0 +1,9 @@
+{
+  "name":"Pink LPS Studio",
+  "short_name":"Pink",
+  "start_url":"./",
+  "display":"standalone",
+  "background_color":"#050b14",
+  "theme_color":"#07111f",
+  "description":"Assistente de voz para desenvolvimento conversacional de aplicativos."
+}

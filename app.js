@@ -1,0 +1,22 @@
+const DEFAULT_ASSISTANT_ID = '5db8d17f-e467-4275-9531-9ccd2c983ff1';
+const $ = (sel) => document.querySelector(sel);
+const timeline = $('#timeline');
+const settingsDialog = $('#settingsDialog');
+const keyStorage = 'pink_vapi_public_key';
+const assistantStorage = 'pink_vapi_assistant_id';
+function nowLabel(){return new Intl.DateTimeFormat('pt-BR',{hour:'2-digit',minute:'2-digit'}).format(new Date())}
+function addMessage(role,text){const item=document.createElement('div');item.className=`timeline-item ${role}`;item.innerHTML=`<div class="avatar-mini">${role==='assistant'?'P':'V'}</div><div class="bubble"><strong>${role==='assistant'?'Pink':'Você'}</strong><p></p><time>${nowLabel()}</time></div>`;item.querySelector('p').textContent=text;timeline.appendChild(item);timeline.scrollTop=timeline.scrollHeight}
+function getConfig(){return{publicKey:localStorage.getItem(keyStorage)||'',assistantId:localStorage.getItem(assistantStorage)||DEFAULT_ASSISTANT_ID}}
+function updateStatus(active=false){$('#voiceStatus').textContent=active?'Ativa no navegador':'Aguardando configuração';$('#voicePulse').classList.toggle('active',active);$('#systemBadge').textContent=active?'Pink online':'Modo laboratório'}
+function renderVoiceWidget(){const cfg=getConfig();const mount=$('#voiceWidgetMount');mount.innerHTML='';if(!cfg.publicKey){mount.innerHTML=`<div class="empty-state"><div class="mic-orb">🎙️</div><strong>Voz pronta para configurar</strong><p>Adicione uma chave pública do Vapi uma única vez. Ela fica salva somente neste navegador.</p><button id="configureVoiceBtn" class="primary-btn">Configurar voz</button></div>`;$('#configureVoiceBtn').addEventListener('click',openSettings);updateStatus(false);return}const widget=document.createElement('vapi-widget');widget.setAttribute('public-key',cfg.publicKey);widget.setAttribute('assistant-id',cfg.assistantId);widget.setAttribute('mode','voice');widget.setAttribute('theme','dark');widget.setAttribute('size','full');widget.setAttribute('radius','large');mount.appendChild(widget);updateStatus(true)}
+function openSettings(){const cfg=getConfig();$('#publicKeyInput').value=cfg.publicKey;$('#assistantIdInput').value=cfg.assistantId;settingsDialog.showModal()}
+$('#settingsBtn').addEventListener('click',openSettings);
+$('#saveSettingsBtn').addEventListener('click',()=>{const key=$('#publicKeyInput').value.trim();const assistant=$('#assistantIdInput').value.trim()||DEFAULT_ASSISTANT_ID;if(key)localStorage.setItem(keyStorage,key);else localStorage.removeItem(keyStorage);localStorage.setItem(assistantStorage,assistant);settingsDialog.close();renderVoiceWidget();addMessage('assistant','Configuração salva. Quando o Vapi estiver habilitado para chamadas web, podemos conversar por voz aqui mesmo.')});
+$('#removeKeyBtn').addEventListener('click',()=>{localStorage.removeItem(keyStorage);localStorage.removeItem(assistantStorage);settingsDialog.close();renderVoiceWidget();addMessage('assistant','Removi a chave pública deste navegador.')});
+$('#clearBtn').addEventListener('click',()=>{timeline.innerHTML='';addMessage('assistant','Sessão limpa. Qual aplicativo vamos melhorar?')});
+const sampleReplies=['Entendi. Vou preparar essa mudança em uma branch de laboratório e mostrar o preview antes de qualquer publicação.','Boa. Primeiro vou localizar a tela correta e preservar os cálculos existentes. Depois te mostro a nova versão.','Certo. Essa alteração ficará isolada da produção até você dizer “aprovado, publica”.','Posso fazer. No próximo módulo do Studio, essa fala vira uma edição real no GitHub com comparação antes e depois.'];
+function simulate(text){addMessage('user',text);setTimeout(()=>addMessage('assistant',sampleReplies[Math.floor(Math.random()*sampleReplies.length)]),380)}
+$('#demoBtn').addEventListener('click',()=>simulate('Pink, abre o aplicativo e deixa a tela inicial mais clean sem mexer nos cálculos.'));
+document.querySelectorAll('.quick-commands button').forEach(b=>b.addEventListener('click',()=>simulate(b.dataset.command)));
+$('#expandPreviewBtn').addEventListener('click',()=>{const card=document.querySelector('.preview-card');if(!document.fullscreenElement)card.requestFullscreen?.();else document.exitFullscreen?.()});
+window.addEventListener('load',()=>setTimeout(renderVoiceWidget,350));
