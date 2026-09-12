@@ -31,3 +31,17 @@ function demoSequence(text){addMessage('user',text);setPinkState('listening');se
 $('#demoBtn').addEventListener('click',()=>demoSequence('Pink, me mostra como você reage enquanto eu falo.'));document.querySelectorAll('.quick-commands button').forEach(button=>button.addEventListener('click',()=>demoSequence(button.dataset.command)));
 $('#expandPreviewBtn').addEventListener('click',()=>{const card=document.querySelector('.preview-card');if(!document.fullscreenElement)card.requestFullscreen?.();else document.exitFullscreen?.()});
 document.addEventListener('visibilitychange',()=>{if(document.hidden&&!callActive)setPinkState('idle')});window.addEventListener('load',()=>{setPinkState('idle');setTimeout(renderVoiceWidget,450)});
+
+
+// === Pink V3 3D motion layer ===
+(function initPinkV3(){
+  const stage=document.querySelector('#pinkStage');
+  if(stage){
+    stage.addEventListener('pointermove',e=>{const r=stage.getBoundingClientRect();const x=(e.clientX-r.left)/r.width-.5;const y=(e.clientY-r.top)/r.height-.5;stage.style.transform=`rotateY(${x*4.8}deg) rotateX(${-y*3.8}deg) translateZ(0)`});
+    stage.addEventListener('pointerleave',()=>{stage.style.transform='rotateY(0deg) rotateX(0deg)'});
+  }
+  const canvas=document.querySelector('#fxCanvas'); if(!canvas)return; const ctx=canvas.getContext('2d'); let w=0,h=0,dpr=1,pts=[];
+  function resize(){dpr=Math.min(devicePixelRatio||1,2);w=innerWidth;h=innerHeight;canvas.width=w*dpr;canvas.height=h*dpr;canvas.style.width=w+'px';canvas.style.height=h+'px';ctx.setTransform(dpr,0,0,dpr,0,0);pts=Array.from({length:Math.min(95,Math.floor(w/14))},()=>({x:Math.random()*w,y:Math.random()*h,r:.5+Math.random()*1.35,s:.07+Math.random()*.24,a:.08+Math.random()*.22,p:Math.random()}))}
+  function draw(){ctx.clearRect(0,0,w,h);for(const p of pts){p.y-=p.s;if(p.y<-8){p.y=h+8;p.x=Math.random()*w}ctx.beginPath();ctx.fillStyle=p.p>.82?`rgba(255,105,190,${p.a})`:`rgba(110,215,255,${p.a})`;ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fill()}requestAnimationFrame(draw)}
+  addEventListener('resize',resize,{passive:true});resize();draw();
+})();

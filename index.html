@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#050b14" />
-  <title>Pink LPS Studio · Live Voice V2</title>
+  <title>Pink LPS Studio · V3 3D</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -12,10 +12,10 @@
   <link rel="stylesheet" href="styles.css" />
   <script src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js" async type="text/javascript"></script>
 </head>
-<body>
+<body class="v3"><canvas id="fxCanvas" aria-hidden="true"></canvas>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <div class="app-shell">
-    <header class="topbar glass"><div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio · Live V2</small></div></div><div class="top-actions"><span id="systemBadge" class="badge">Modo laboratório</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div></header>
+    <header class="topbar glass"><div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio · V3 3D</small></div></div><div class="top-actions"><span id="systemBadge" class="badge">Modo laboratório</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div></header>
     <main class="workspace">
       <aside class="assistant-panel glass">
         <div id="pinkStage" class="pink-stage" data-state="idle" aria-live="polite">
@@ -24,7 +24,7 @@
           <div class="state-pill"><i></i><span id="avatarStateText">Pronta</span></div>
           <div class="voice-signature"><span>VOICE</span><strong>Roberta · ElevenLabs</strong></div>
         </div>
-        <div class="assistant-copy"><p class="eyebrow">PINK · AI OPERATING STUDIO</p><h1>Fale comigo. Eu ouço, penso, respondo e apresento.</h1><p class="lede">A Pink agora reage visualmente à conversa em tempo real. O avatar muda entre ouvindo, pensando, falando e executando enquanto o Vapi conduz a chamada com a voz Roberta do ElevenLabs.</p></div>
+        <div class="assistant-copy"><p class="eyebrow">PINK · AI OPERATING STUDIO</p><h1>Talk. Build. Operate.</h1><p class="lede">Uma IA viva para conversar, abrir sistemas, apresentar telas e executar trabalho. Agora com palco 3D, profundidade, partículas e presença visual premium.</p></div>
         <div class="status-grid"><div class="status-card"><span class="status-icon">🎙️</span><div><small>Voz</small><strong id="voiceStatus">Aguardando configuração</strong></div></div><div class="status-card"><span class="status-icon">🔊</span><div><small>TTS</small><strong>Roberta · ElevenLabs</strong></div></div><div class="status-card"><span class="status-icon">🧠</span><div><small>Cérebro</small><strong>GPT-5.6 Sol</strong></div></div></div>
         <section class="voice-box"><div class="section-title"><div><small>CONVERSA EM TEMPO REAL</small><h2>Falar com a Pink</h2></div><span class="live-dot"></span></div><div id="voiceWidgetMount" class="widget-mount"><div class="empty-state"><div class="mic-orb">🎙️</div><strong>Voz pronta para configurar</strong><p>Adicione sua Public API Key do Vapi uma única vez. A chave pública fica somente neste navegador.</p><button id="configureVoiceBtn" class="primary-btn">Configurar voz</button></div></div></section>
       </aside>
@@ -32,7 +32,7 @@
         <div class="studio-header glass"><div><p class="eyebrow">LIVE ORCHESTRATION</p><h2>Pink em execução</h2></div><div class="studio-actions"><button id="clearBtn" class="secondary-btn">Limpar</button><button id="demoBtn" class="primary-btn">Testar animação</button></div></div>
         <div class="agent-strip glass" aria-label="Estados da Pink"><div class="agent-node active" data-node="listen"><i></i><span>OUVIR</span></div><b>→</b><div class="agent-node" data-node="think"><i></i><span>PENSAR</span></div><b>→</b><div class="agent-node" data-node="speak"><i></i><span>FALAR</span></div><b>→</b><div class="agent-node" data-node="act"><i></i><span>EXECUTAR</span></div></div>
         <section class="command-console glass"><div class="section-title"><div><small>HISTÓRICO</small><h2>Conversa da sessão</h2></div><span class="badge subtle">eventos Vapi em tempo real</span></div><div id="timeline" class="timeline"><div class="timeline-item assistant"><div class="avatar-mini">P</div><div class="bubble"><strong>Pink</strong><p>Estou pronta. Toque em iniciar chamada e fale comigo normalmente.</p><time>agora</time></div></div></div><div class="quick-commands"><button data-command="Pink, abre o CVM e me apresenta a tela inicial.">Abrir CVM</button><button data-command="Pink, deixa essa tela mais clean sem alterar os cálculos.">Melhorar layout</button><button data-command="Pink, mostra o antes e depois dessa alteração.">Antes / Depois</button><button data-command="Pink, entra no modo desenvolvedora.">Modo desenvolvedora</button></div></section>
-        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div id="previewAddress" class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-orb"><span></span><span></span><span></span></div><h3 id="previewTitle">Pink Live Voice V2</h3><p id="previewText">Quando você falar, os eventos da chamada aparecem aqui e o avatar reage em tempo real. A próxima camada conecta comandos de voz às telas dos seus sistemas.</p><div class="flow"><span>🎙️ Ouvindo</span><b>→</b><span>🧠 Pensando</span><b>→</b><span>🔊 Roberta</span><b>→</b><span>🖥️ Ação</span></div></div></div></section>
+        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div id="previewAddress" class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-orb"><span></span><span></span><span></span></div><h3 id="previewTitle">Pink V3 · 3D Stage</h3><p id="previewText">A Pink reage em tempo real e transforma a conversa em uma experiência visual: ouvir, pensar, falar, executar e abrir seus sistemas em preview.</p><div class="flow"><span>🎙️ Ouvindo</span><b>→</b><span>🧠 Pensando</span><b>→</b><span>🔊 Roberta</span><b>→</b><span>🖥️ Ação</span></div></div></div></section>
       </section>
     </main>
   </div>
