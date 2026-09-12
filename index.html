@@ -48,6 +48,12 @@
   </div>
   <dialog id="settingsDialog" class="settings-dialog"><form method="dialog" class="settings-card"><div class="settings-head"><div><small>CONFIGURAÇÃO</small><h2>Voz da Pink</h2></div><button value="cancel" class="icon-btn">✕</button></div><p>Use somente uma <strong>Public API Key</strong> do Vapi. Nunca coloque uma chave privada no navegador. A assistente já está configurada no Vapi com a voz Roberta do ElevenLabs.</p><label>Public API Key do Vapi<input id="publicKeyInput" type="password" autocomplete="off" placeholder="pk_..." /></label><label>ID da assistente<input id="assistantIdInput" type="text" value="5db8d17f-e467-4275-9531-9ccd2c983ff1" /></label><div class="settings-note">Restrinja a chave pública ao domínio da Pink e, quando possível, somente à assistente Pink.</div><div class="dialog-actions"><button id="removeKeyBtn" type="button" class="danger-btn">Remover chave</button><button id="saveSettingsBtn" type="button" class="primary-btn">Salvar e ativar</button></div></form></dialog>
   <script src="pink-evolution.js"></script>
+  <script src="core/awareness.js"></script>
+  <script src="core/planner.js"></script>
+  <script src="core/approval.js"></script>
+  <script src="core/memory.js"></script>
+  <script src="core/health.js"></script>
   <script src="app.js"></script>
+  <script src="core/runtime-adapter.js"></script>
 </body>
 </html>

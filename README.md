@@ -45,3 +45,7 @@ Produção deve ser protegida por confirmação explícita. Exclusões, publica�
 ## Evolution Core
 
 Pink now includes a safe self-improvement layer. Runtime signals generate improvement candidates locally, Gemini provides independent review, and autonomous development is limited to isolated branches/draft PRs. Production merges remain approval-gated. See `EVOLUTION.md` and `evolution-policy.json`.
+
+## Pink OS Core — Jarvis architecture extraction
+
+A clean-room compatibility layer now brings five useful concepts into Pink: Awareness, Planner/Recovery, Approval, Context Memory and Health/Self-Test. The implementation is browser-safe and intentionally excludes generated-code execution, automatic package installation and unrestricted computer control. See `JARVIS_IMPORT_01.md`.
