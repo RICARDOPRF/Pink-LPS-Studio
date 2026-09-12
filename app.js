@@ -11,6 +11,18 @@ let conversation = null;
 let elevenLabsSdkPromise = null;
 let autoStartAttempted = false;
 let startingCall = false;
+let fallbackVoiceActive = false;
+let fallbackStarting = false;
+let fallbackRecognition = null;
+let fallbackSpeaking = false;
+let fallbackRestartTimer = null;
+let fallbackContextBuffer = [];
+let fallbackHistory = [];
+let fallbackTurnSerial = 0;
+let fallbackInternalPending = false;
+let elevenConnectedAt = 0;
+let elevenMessageCount = 0;
+let lastStartUserGesture = false;
 const seenMessages = new Set();
 
 const STATE = {
@@ -48,7 +60,9 @@ function setPinkState(state,options={}){
   window.PinkEvolution?.recordState?.(state);
   $('#avatarStateText').textContent=meta.label;
   $('#systemBadge').textContent=meta.badge;
-  $('#voiceStatus').textContent=meta.voice;
+  $('#voiceStatus').textContent=fallbackVoiceActive
+    ? (state==='listening'?'Contingência · ouvindo pelo dispositivo':state==='speaking'?'Contingência · voz do dispositivo':state==='thinking'?'Contingência · NVIDIA processando':'Contingência de voz ativa')
+    : meta.voice;
   setAgentNode(meta.node);
   clearTimeout(stateFallbackTimer);
   if(options.fallbackMs)stateFallbackTimer=setTimeout(()=>setPinkState(callActive?'listening':'idle'),options.fallbackMs);
@@ -105,6 +119,7 @@ function handleElevenMessage(message){
   const source=String(message.source||message.role||'').toLowerCase();
   const text=message.message||message.text||message.transcript||'';
   if(!text)return;
+  elevenMessageCount += 1;
   if(source==='user'||source==='customer'){
     setPinkState('thinking');
     addMessage('user',text);
@@ -154,8 +169,141 @@ function voiceErrorMode(error){
   if(msg.includes('sdk')||msg.includes('import')||msg.includes('module'))return 'sdk-error';
   return 'error';
 }
+
+function isElevenQuotaError(error){
+  const raw=String(error?.message||error?.detail||error||'').toLowerCase();
+  return raw.includes('quota')||raw.includes('limit')||raw.includes('credit')||raw.includes('429')||raw.includes('exceeds your quota');
+}
+function browserSpeechCtor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null}
+function pushFallbackContext(text=''){
+  const value=String(text).trim();if(!value)return;
+  fallbackContextBuffer.push(value.slice(0,5000));
+  if(fallbackContextBuffer.length>10)fallbackContextBuffer=fallbackContextBuffer.slice(-10);
+}
+function chooseDeviceVoice(){
+  const voices=window.speechSynthesis?.getVoices?.()||[];
+  return voices.find(v=>/^pt-BR$/i.test(v.lang))||voices.find(v=>/^pt/i.test(v.lang))||voices.find(v=>/portugu/i.test(v.name))||null;
+}
+function restartFallbackRecognition(delay=260){
+  clearTimeout(fallbackRestartTimer);
+  if(!fallbackVoiceActive||fallbackSpeaking)return;
+  fallbackRestartTimer=setTimeout(()=>{
+    if(!fallbackVoiceActive||fallbackSpeaking||!fallbackRecognition)return;
+    try{fallbackRecognition.start()}catch(_){ }
+  },delay);
+}
+function speakFallback(text=''){
+  const cleaned=String(text).trim();if(!cleaned)return Promise.resolve();
+  addMessage('assistant',cleaned);
+  if(!window.speechSynthesis){setPinkState('listening');return Promise.resolve()}
+  return new Promise(resolve=>{
+    try{fallbackRecognition?.stop?.()}catch(_){ }
+    window.speechSynthesis.cancel();
+    const utterance=new SpeechSynthesisUtterance(cleaned);
+    utterance.lang='pt-BR';utterance.rate=.98;utterance.pitch=1.02;
+    const voice=chooseDeviceVoice();if(voice)utterance.voice=voice;
+    utterance.onstart=()=>{fallbackSpeaking=true;setPinkState('speaking')};
+    utterance.onend=()=>{fallbackSpeaking=false;setPinkState('listening');restartFallbackRecognition();resolve()};
+    utterance.onerror=()=>{fallbackSpeaking=false;setPinkState('listening');restartFallbackRecognition();resolve()};
+    window.speechSynthesis.speak(utterance);
+  });
+}
+async function fallbackRespond(text,{internal=false}={}){
+  const cleaned=String(text).replace(/^\[PINK_INTERNAL_RESULT\]\s*/i,'').trim();if(!cleaned)return;
+  setPinkState('thinking');
+  const context=fallbackContextBuffer.slice(-6).join('\n---\n');
+  const history=fallbackHistory.slice(-8);
+  try{
+    if(!window.PinkNVIDIA?.ask)throw new Error('NVIDIA indisponível');
+    const result=await window.PinkNVIDIA.ask([
+      {role:'system',content:'Você é Pink, assistente da Lean Performance Solutions. Responda sempre em português do Brasil, de forma natural e curta para voz. Use somente fatos disponíveis na conversa/contexto. Não invente ações nem acessos. Se o contexto disser que algo foi executado ou consultado, informe o resultado com precisão.'},
+      ...(context?[{role:'system',content:`Contexto operacional recente da Pink:\n${context}`}]:[]),
+      ...history,
+      {role:'user',content:cleaned}
+    ],{temperature:.25,maxTokens:420});
+    const reply=String(result?.reply||'').trim()||'Estou te ouvindo. Pode repetir de outra forma?';
+    fallbackHistory.push({role:'user',content:cleaned},{role:'assistant',content:reply});
+    fallbackHistory=fallbackHistory.slice(-12);
+    fallbackInternalPending=false;
+    await speakFallback(reply);
+  }catch(error){
+    fallbackInternalPending=false;
+    window.PinkEvolution?.recordIssue?.('fallback-voice-brain',error?.message||error);
+    await speakFallback('Estou te ouvindo, mas meu modo de contingência não conseguiu processar a resposta agora. Tenta novamente em alguns segundos.');
+  }
+}
+function fallbackConversationAdapter(){
+  return {
+    sendContextualUpdate(text){pushFallbackContext(text)},
+    sendUserMessage(text){fallbackInternalPending=true;fallbackRespond(text,{internal:true})},
+    sendUserActivity(){},
+    async endSession(){stopFallbackVoice()},
+  };
+}
+async function handleFallbackTranscript(text=''){
+  const spoken=String(text).trim();if(!spoken)return;
+  const serial=++fallbackTurnSerial;
+  fallbackInternalPending=false;
+  addMessage('user',spoken);setPinkState('thinking');
+  try{window.PinkCore?.handleUserSpeech?.(spoken)}catch(error){console.warn('Pink fallback router error',error)}
+  setTimeout(()=>{
+    if(!fallbackVoiceActive||serial!==fallbackTurnSerial||fallbackInternalPending)return;
+    fallbackRespond(spoken);
+  },900);
+}
+function stopFallbackVoice(){
+  fallbackVoiceActive=false;fallbackStarting=false;fallbackSpeaking=false;
+  clearTimeout(fallbackRestartTimer);
+  try{fallbackRecognition?.abort?.()}catch(_){ }
+  fallbackRecognition=null;
+  try{window.speechSynthesis?.cancel?.()}catch(_){ }
+}
+async function startFallbackVoice({userGesture=false,reason=''}={}){
+  if(fallbackVoiceActive||fallbackStarting)return true;
+  const Recognition=browserSpeechCtor();
+  if(!Recognition){showWakeGate('unsupported');return false}
+  fallbackStarting=true;
+  try{
+    if(userGesture)await unlockVoiceFromUserGesture();
+    stopFallbackVoice();fallbackStarting=true;
+    const recognition=new Recognition();
+    recognition.lang='pt-BR';recognition.continuous=false;recognition.interimResults=false;recognition.maxAlternatives=1;
+    fallbackRecognition=recognition;
+    const adapter=fallbackConversationAdapter();conversation=adapter;
+    recognition.onresult=(event)=>{
+      const result=event.results?.[event.results.length-1];
+      const transcript=result?.[0]?.transcript||'';
+      if(transcript)handleFallbackTranscript(transcript);
+    };
+    recognition.onerror=(event)=>{
+      const code=String(event?.error||'');
+      if(!['no-speech','aborted'].includes(code))window.PinkEvolution?.recordIssue?.('fallback-speech-error',code);
+    };
+    recognition.onend=()=>restartFallbackRecognition();
+    fallbackVoiceActive=true;fallbackStarting=false;callActive=true;startingCall=false;
+    hideWakeGate();setPinkState('listening');renderVoiceControls();
+    window.PinkCore?.attachConversation?.(adapter);
+    window.PinkEvolution?.recordSession?.(`voice-fallback:${reason||'manual'}`);
+    try{recognition.start()}catch(_){restartFallbackRecognition(120)}
+    await speakFallback('Pink online. Estou te ouvindo.');
+    return true;
+  }catch(error){
+    fallbackStarting=false;fallbackVoiceActive=false;callActive=false;conversation=null;
+    window.PinkEvolution?.recordIssue?.('fallback-start-error',error?.message||error);
+    showWakeGate(voiceErrorMode(error));
+    return false;
+  }
+}
+async function activateVoiceFallback(reason='elevenlabs-unavailable'){
+  if(fallbackVoiceActive||fallbackStarting)return true;
+  try{if(conversation&&!fallbackVoiceActive)await conversation.endSession?.()}catch(_){ }
+  conversation=null;callActive=false;startingCall=false;
+  return startFallbackVoice({userGesture:false,reason});
+}
+
 async function startPinkCall({userGesture=false,auto=false}={}){
   if(callActive||startingCall)return true;
+  lastStartUserGesture=userGesture;
   startingCall=true;setPinkState('thinking');renderVoiceControls();
   try{
     if(userGesture)await unlockVoiceFromUserGesture();
@@ -164,23 +312,29 @@ async function startPinkCall({userGesture=false,auto=false}={}){
       agentId:ELEVENLABS_AGENT_ID,
       connectionType:'webrtc',
       onConnect:()=>{
+        elevenConnectedAt=Date.now();elevenMessageCount=0;
         startingCall=false;callActive=true;hideWakeGate();setPinkState('listening');renderVoiceControls();
         window.PinkEvolution?.recordSession?.('elevenlabs-connected');
         addMessage('assistant','Pink online. Estou te ouvindo.');
       },
       onDisconnect:()=>{
-        const wasActive=callActive;startingCall=false;callActive=false;
+        const wasActive=callActive;
+        const rapidFailure=wasActive&&elevenConnectedAt>0&&(Date.now()-elevenConnectedAt<5000)&&elevenMessageCount===0;
+        startingCall=false;callActive=false;
         window.PinkCore?.detachConversation?.();
         conversation=null;setPinkState('idle');renderVoiceControls();
-        window.PinkEvolution?.recordSession?.('elevenlabs-disconnected');
-        if(wasActive)addMessage('assistant','Conversa encerrada. Quando quiser, pode falar comigo de novo.');
+        window.PinkEvolution?.recordSession?.(rapidFailure?'elevenlabs-rapid-failure':'elevenlabs-disconnected');
+        if(rapidFailure){startFallbackVoice({userGesture:false,reason:'elevenlabs-rapid-failure'});return;}
+        if(wasActive&&!fallbackVoiceActive)addMessage('assistant','Conversa encerrada. Quando quiser, pode falar comigo de novo.');
       },
       onMessage:handleElevenMessage,
       onModeChange:handleElevenModeChange,
       onStatusChange:handleElevenStatusChange,
       onError:(error)=>{
         window.PinkEvolution?.recordIssue?.('elevenlabs-error',error?.message||error);
-        console.error('Pink/ElevenLabs error',error);setPinkState('error');
+        console.error('Pink/ElevenLabs error',error);
+        if(isElevenQuotaError(error)){activateVoiceFallback('elevenlabs-quota');return;}
+        setPinkState('error');
       }
     });
     window.PinkCore?.attachConversation?.(conversation);
@@ -190,11 +344,17 @@ async function startPinkCall({userGesture=false,auto=false}={}){
     window.PinkEvolution?.recordIssue?.('elevenlabs-start-error',error?.message||error);
     window.PinkCore?.detachConversation?.();
     startingCall=false;callActive=false;conversation=null;setPinkState('idle');renderVoiceControls();
-    showWakeGate(auto?'tap':voiceErrorMode(error));
+    const mode=voiceErrorMode(error);
+    if(isElevenQuotaError(error)||(!auto&&mode!=='mic-denied'&&mode!=='unsupported')){
+      const recovered=await startFallbackVoice({userGesture:false,reason:isElevenQuotaError(error)?'elevenlabs-quota':'elevenlabs-start-error'});
+      if(recovered)return true;
+    }
+    showWakeGate(auto?'tap':mode);
     return false;
   }
 }
 async function stopPinkCall(){
+  if(fallbackVoiceActive){stopFallbackVoice();window.PinkCore?.detachConversation?.();conversation=null;callActive=false;startingCall=false;setPinkState('idle');renderVoiceControls();return;}
   const activeConversation=conversation;if(!activeConversation)return;
   try{await activeConversation.endSession()}catch(error){console.warn('Pink ElevenLabs stop error',error)}finally{
     window.PinkCore?.detachConversation?.();conversation=null;callActive=false;startingCall=false;setPinkState('idle');renderVoiceControls();
@@ -233,7 +393,9 @@ window.PinkVoice={
   branchId:ELEVENLABS_BRANCH_ID,
   start:()=>startPinkCall({userGesture:true}),
   stop:stopPinkCall,
-  getConversation:()=>conversation
+  startFallback:()=>startFallbackVoice({userGesture:true,reason:'manual'}),
+  getConversation:()=>conversation,
+  get mode(){return fallbackVoiceActive?'fallback':callActive?'elevenlabs':'idle'}
 };
 
 // === Pink V3 3D motion layer ===
