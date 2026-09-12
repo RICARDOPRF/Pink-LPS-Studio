@@ -1,6 +1,6 @@
 # Pink LPS Studio
 
-Interface inicial da **Pink**, assistente de voz da Lean Performance Solutions para desenvolvimento conversacional de aplicativos.
+Interface da **Pink**, assistente de voz da Lean Performance Solutions para desenvolvimento conversacional de aplicativos.
 
 ## Objetivo
 
@@ -15,28 +15,27 @@ Permitir um fluxo no qual o usuário fala normalmente com a Pink e, progressivam
 7. apresentar por voz o que mudou;
 8. publicar somente após aprovação explícita.
 
-## Estado atual — V1
+## Estado atual
 
 - interface web responsiva;
-- avatar da Pink;
-- integração preparada para o Vapi Web Widget;
-- Assistant ID da Pink configurado;
-- chave pública do Vapi **não é versionada**: o usuário informa uma Public API Key uma única vez e ela fica apenas no `localStorage` do navegador;
-- área de histórico de comandos e simulação;
-- área reservada para preview de aplicativos.
+- avatar 3D da Pink;
+- voz conectada diretamente ao **ElevenLabs Agents**;
+- voz configurada no agente: **Roberta**;
+- Agent ID público: `agent_0001m2brk3bxes2vwzc26rpzqww4`;
+- conversa por voz via WebRTC usando `@elevenlabs/client`;
+- estados visuais de ouvindo, pensando e falando sincronizados com a sessão;
+- nenhuma API Key privada é armazenada no GitHub ou no navegador;
+- área de histórico de conversa e preview de aplicativos.
 
 ## Configuração da voz
 
-1. No Vapi Dashboard, crie/copiei uma **Public API Key**.
-2. Restrinja a chave ao domínio do GitHub Pages e à assistente Pink.
-3. Abra o Pink LPS Studio, clique na engrenagem e informe a chave pública.
-4. Nunca coloque a Private API Key em `index.html`, `app.js` ou qualquer arquivo público.
+A voz e o comportamento são administrados diretamente no painel do agente ElevenLabs. O frontend usa apenas o Agent ID público para iniciar a conversa.
 
-Assistant ID atual: `5db8d17f-e467-4275-9531-9ccd2c983ff1`
+Se o agente for alterado para privado no futuro, a autenticação deve passar por backend seguro para emissão de token/signed URL. Nunca coloque uma API Key privada do ElevenLabs no `index.html`, `app.js` ou em qualquer arquivo público.
 
 ## Próxima etapa
 
-A camada de edição real não deve colocar token do GitHub no navegador. O caminho recomendado é um backend seguro (por exemplo Cloudflare Worker) que receba comandos autorizados, use GitHub/Composio no servidor e crie branches/previews de laboratório.
+A camada de edição real não deve colocar token do GitHub no navegador. O caminho recomendado é um backend seguro que receba comandos autorizados, use GitHub no servidor e crie branches/previews de laboratório.
 
 ## Segurança
 
@@ -44,4 +43,4 @@ Produção deve ser protegida por confirmação explícita. Exclusões, publica�
 
 ## Evolution Core
 
-Pink now includes a safe self-improvement layer. Runtime signals generate improvement candidates locally, Gemini provides independent review, and autonomous development is limited to isolated branches/draft PRs. Production merges remain approval-gated. See `EVOLUTION.md` and `evolution-policy.json`.
+Pink includes a safe self-improvement layer. Runtime signals generate improvement candidates locally, Gemini can provide independent review, and autonomous development is limited to isolated branches/draft PRs. Production merges remain approval-gated. See `EVOLUTION.md` and `evolution-policy.json`.
