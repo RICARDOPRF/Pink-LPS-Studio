@@ -16,3 +16,4 @@ Decisão atual:
 12. **Fase 11 — Global Product / Enterprise**
 
 A `main` é sempre a fonte funcional. Cada fase nasce em branch `evolution/*` e só entra em produção após validação.
+
