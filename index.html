@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
   <meta name="theme-color" content="#050b14" />
-  <title>Pink LPS Studio · V3 3D</title>
+  <title>Pink LPS Studio · V7</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,7 +14,7 @@
 <body class="v3"><canvas id="fxCanvas" aria-hidden="true"></canvas>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <div class="app-shell">
-    <header class="topbar glass"><div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio · V3 3D</small></div></div><div class="top-actions"><span id="systemBadge" class="badge">Pink online</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div></header>
+    <header class="topbar glass"><div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio · V7</small></div></div><div class="top-actions"><span id="systemBadge" class="badge">Pink online</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div></header>
     <main class="workspace">
       <aside class="assistant-panel glass">
         <div id="pinkStage" class="pink-stage" data-state="idle" aria-live="polite">
@@ -23,15 +23,15 @@
           <div class="state-pill"><i></i><span id="avatarStateText">Pronta</span></div>
           <div class="voice-signature"><span>VOICE</span><strong>Roberta · ElevenLabs</strong></div>
         </div>
-        <div class="assistant-copy"><p class="eyebrow">PINK · AI OPERATING STUDIO</p><h1>Talk. Build. Operate.</h1><p class="lede">Uma IA viva para conversar, abrir sistemas, apresentar telas e executar trabalho. Agora com palco 3D, profundidade, partículas e presença visual premium.</p></div>
+        <div class="assistant-copy"><p class="eyebrow">PINK · AI OPERATING STUDIO</p><h1>Talk. Build. Operate.</h1><p class="lede">Central inteligente da Lean Performance Solutions. Converse por voz, abra sistemas e painéis e mantenha contexto das pessoas que se apresentam à Pink.</p></div>
         <div class="status-grid"><div class="status-card"><span class="status-icon">🎙️</span><div><small>Voz</small><strong id="voiceStatus">ElevenLabs pronto · Roberta</strong></div></div><div class="status-card"><span class="status-icon">🔊</span><div><small>TTS</small><strong>Roberta · ElevenLabs</strong></div></div><div class="status-card"><span class="status-icon">🧠</span><div><small>Cérebro</small><strong>GPT-5.6 Sol</strong></div></div></div>
         <section class="voice-box"><div class="section-title"><div><small>CONVERSA EM TEMPO REAL</small><h2>Falar com a Pink</h2></div><span class="live-dot"></span></div><div id="voiceWidgetMount" class="widget-mount"><div class="empty-state"><div class="mic-orb">🎙️</div><strong>Pink conectada ao ElevenLabs</strong><p>Agente configurado com a voz Roberta. Toque para liberar o microfone e começar.</p><button class="primary-btn" disabled>Carregando voz…</button></div></div></section>
       </aside>
       <section class="studio-panel">
         <div class="studio-header glass"><div><p class="eyebrow">LIVE ORCHESTRATION</p><h2>Pink em execução</h2></div><div class="studio-actions"><button id="clearBtn" class="secondary-btn">Limpar</button><button id="demoBtn" class="primary-btn">Testar animação</button></div></div>
         <div class="agent-strip glass" aria-label="Estados da Pink"><div class="agent-node active" data-node="listen"><i></i><span>OUVIR</span></div><b>→</b><div class="agent-node" data-node="think"><i></i><span>PENSAR</span></div><b>→</b><div class="agent-node" data-node="speak"><i></i><span>FALAR</span></div><b>→</b><div class="agent-node" data-node="act"><i></i><span>EXECUTAR</span></div></div>
-        <section class="command-console glass"><div class="section-title"><div><small>HISTÓRICO</small><h2>Conversa da sessão</h2></div><span class="badge subtle">eventos ElevenLabs em tempo real</span></div><div id="timeline" class="timeline"><div class="timeline-item assistant"><div class="avatar-mini">P</div><div class="bubble"><strong>Pink</strong><p>Estou pronta. Ao entrar, vou tentar te cumprimentar automaticamente.</p><time>agora</time></div></div></div><div class="quick-commands"><button data-command="Pink, abre o CVM e me apresenta a tela inicial.">Abrir CVM</button><button data-command="Pink, deixa essa tela mais clean sem alterar os cálculos.">Melhorar layout</button><button data-command="Pink, mostra o antes e depois dessa alteração.">Antes / Depois</button><button data-command="Pink, entra no modo desenvolvedora.">Modo desenvolvedora</button></div></section>
-        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div id="previewAddress" class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-orb"><span></span><span></span><span></span></div><h3 id="previewTitle">Pink V3 · 3D Stage</h3><p id="previewText">A Pink reage em tempo real e transforma a conversa em uma experiência visual: ouvir, pensar, falar, executar e abrir seus sistemas em preview.</p><div class="flow"><span>🎙️ Ouvindo</span><b>→</b><span>🧠 Pensando</span><b>→</b><span>🔊 Roberta</span><b>→</b><span>🖥️ Ação</span></div></div></div></section>
+        <section class="command-console glass"><div class="section-title"><div><small>HISTÓRICO</small><h2>Conversa da sessão</h2></div><span class="badge subtle">ElevenLabs + Pink Core</span></div><div id="timeline" class="timeline"><div class="timeline-item assistant"><div class="avatar-mini">P</div><div class="bubble"><strong>Pink</strong><p>Estou pronta. Pode falar comigo e pedir para abrir os sistemas da LPS.</p><time>agora</time></div></div></div><div class="quick-commands"><button data-command="Pink, abre o site da LPS.">Abrir LPS</button><button data-command="Pink, abre a Calculadora do Planejador.">Calculadora</button><button data-command="Pink, abre o DuooPlanning.">DuooPlanning</button><button data-command="Pink, abre o LPS Prospect.">LPS Prospect</button></div></section>
+        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div id="previewAddress" class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-orb"><span></span><span></span><span></span></div><h3 id="previewTitle">Pink V7 · Central LPS</h3><p id="previewText">Fale “Pink, abre a Calculadora”, “abre o DuooPlanning” ou “abre o LPS Prospect”. A Pink também registra pessoas que se apresentam explicitamente pelo nome.</p><div class="flow"><span>🎙️ Ouvindo</span><b>→</b><span>🧠 Pensando</span><b>→</b><span>🔊 Roberta</span><b>→</b><span>🖥️ Sistema</span></div></div></div></section>
       </section>
     </main>
   </div>
@@ -46,8 +46,9 @@
       <button id="wakeSettingsBtn" type="button" class="wake-link">Detalhes da voz</button>
     </div>
   </div>
-  <dialog id="settingsDialog" class="settings-dialog"><form method="dialog" class="settings-card"><div class="settings-head"><div><small>CONFIGURAÇÃO</small><h2>Voz da Pink</h2></div><button value="cancel" class="icon-btn">✕</button></div><p>A Pink agora usa o <strong>ElevenLabs Agents</strong> diretamente. Nenhuma API Key privada fica salva no GitHub ou no navegador.</p><label>Agente ElevenLabs<input type="text" value="agent_0001m2brk3bxes2vwzc26rpzqww4" readonly /></label><label>Voz<input type="text" value="Roberta · ElevenLabs" readonly /></label><div class="settings-note">A voz e o comportamento são administrados no painel do agente ElevenLabs. O site usa somente o Agent ID público.</div><div class="dialog-actions"><button value="cancel" type="submit" class="primary-btn">Fechar</button></div></form></dialog>
-  <script src="pink-evolution.js?v=6"></script>
-  <script src="app.js?v=6"></script>
+  <dialog id="settingsDialog" class="settings-dialog"><form method="dialog" class="settings-card"><div class="settings-head"><div><small>CONFIGURAÇÃO</small><h2>Voz da Pink</h2></div><button value="cancel" class="icon-btn">✕</button></div><p>A Pink usa o <strong>ElevenLabs Agents</strong> diretamente. Nenhuma API Key privada fica salva no GitHub ou no navegador.</p><label>Agente ElevenLabs<input type="text" value="agent_0001m2brk3bxes2vwzc26rpzqww4" readonly /></label><label>Voz<input type="text" value="Roberta · ElevenLabs" readonly /></label><div class="settings-note">A memória de pessoas desta versão usa somente informações que a própria pessoa disser e fica salva neste navegador. Não há identificação biométrica pela voz.</div><div class="dialog-actions"><button value="cancel" type="submit" class="primary-btn">Fechar</button></div></form></dialog>
+  <script src="pink-evolution.js?v=7"></script>
+  <script src="pink-core.js?v=7"></script>
+  <script src="app.js?v=7"></script>
 </body>
 </html>
