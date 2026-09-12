@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
-  <meta name="theme-color" content="#07111f" />
-  <title>Pink LPS Studio</title>
+  <meta name="theme-color" content="#050b14" />
+  <title>Pink LPS Studio · Live Voice V2</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -13,38 +13,30 @@
   <script src="https://unpkg.com/@vapi-ai/client-sdk-react/dist/embed/widget.umd.js" async type="text/javascript"></script>
 </head>
 <body>
+  <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
   <div class="app-shell">
-    <header class="topbar glass">
-      <div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio</small></div></div>
-      <div class="top-actions"><span id="systemBadge" class="badge">Modo laboratório</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div>
-    </header>
+    <header class="topbar glass"><div class="brand"><span class="brand-dot"></span><div><strong>Pink</strong><small>LPS Studio · Live V2</small></div></div><div class="top-actions"><span id="systemBadge" class="badge">Modo laboratório</span><button id="settingsBtn" class="icon-btn" aria-label="Configurações">⚙️</button></div></header>
     <main class="workspace">
       <aside class="assistant-panel glass">
-        <div class="portrait-wrap"><img src="pink-avatar.svg" alt="Pink, assistente virtual da LPS" class="portrait" /><span id="voicePulse" class="voice-pulse" aria-hidden="true"></span></div>
-        <div class="assistant-copy"><p class="eyebrow">SUA DESENVOLVEDORA POR VOZ</p><h1>Fale. Eu transformo em software.</h1><p class="lede">Converse com a Pink para planejar mudanças, revisar interfaces e, nas próximas etapas, editar, testar, apresentar e publicar aplicativos sem precisar navegar pelos arquivos.</p></div>
-        <div class="status-grid">
-          <div class="status-card"><span class="status-icon">🎙️</span><div><small>Voz</small><strong id="voiceStatus">Aguardando configuração</strong></div></div>
-          <div class="status-card"><span class="status-icon">🧠</span><div><small>Cérebro</small><strong>GPT-5.6 Sol</strong></div></div>
-          <div class="status-card"><span class="status-icon">💻</span><div><small>GitHub</small><strong>Preparando integração segura</strong></div></div>
+        <div id="pinkStage" class="pink-stage" data-state="idle" aria-live="polite">
+          <img src="pink-avatar-reference.webp" alt="Pink, assistente virtual humanoide da LPS" class="portrait" />
+          <span class="stage-vignette"></span><span class="scanline"></span><span class="eyelid eyelid-left"></span><span class="eyelid eyelid-right"></span><span class="lip-sync"></span><span id="voicePulse" class="voice-pulse" aria-hidden="true"></span>
+          <div class="state-pill"><i></i><span id="avatarStateText">Pronta</span></div>
+          <div class="voice-signature"><span>VOICE</span><strong>Roberta · ElevenLabs</strong></div>
         </div>
-        <section class="voice-box">
-          <div class="section-title"><div><small>CONVERSA</small><h2>Falar com a Pink</h2></div><span class="live-dot"></span></div>
-          <div id="voiceWidgetMount" class="widget-mount"><div class="empty-state"><div class="mic-orb">🎙️</div><strong>Voz pronta para configurar</strong><p>Adicione uma chave pública do Vapi uma única vez. Ela fica salva somente neste navegador.</p><button id="configureVoiceBtn" class="primary-btn">Configurar voz</button></div></div>
-        </section>
+        <div class="assistant-copy"><p class="eyebrow">PINK · AI OPERATING STUDIO</p><h1>Fale comigo. Eu ouço, penso, respondo e apresento.</h1><p class="lede">A Pink agora reage visualmente à conversa em tempo real. O avatar muda entre ouvindo, pensando, falando e executando enquanto o Vapi conduz a chamada com a voz Roberta do ElevenLabs.</p></div>
+        <div class="status-grid"><div class="status-card"><span class="status-icon">🎙️</span><div><small>Voz</small><strong id="voiceStatus">Aguardando configuração</strong></div></div><div class="status-card"><span class="status-icon">🔊</span><div><small>TTS</small><strong>Roberta · ElevenLabs</strong></div></div><div class="status-card"><span class="status-icon">🧠</span><div><small>Cérebro</small><strong>GPT-5.6 Sol</strong></div></div></div>
+        <section class="voice-box"><div class="section-title"><div><small>CONVERSA EM TEMPO REAL</small><h2>Falar com a Pink</h2></div><span class="live-dot"></span></div><div id="voiceWidgetMount" class="widget-mount"><div class="empty-state"><div class="mic-orb">🎙️</div><strong>Voz pronta para configurar</strong><p>Adicione sua Public API Key do Vapi uma única vez. A chave pública fica somente neste navegador.</p><button id="configureVoiceBtn" class="primary-btn">Configurar voz</button></div></div></section>
       </aside>
       <section class="studio-panel">
-        <div class="studio-header glass"><div><p class="eyebrow">LABORATÓRIO</p><h2>Desenvolvimento conversacional</h2></div><div class="studio-actions"><button id="clearBtn" class="secondary-btn">Limpar</button><button id="demoBtn" class="primary-btn">Simular comando</button></div></div>
-        <div class="cards-row"><article class="metric-card glass"><span>01</span><div><small>ENTENDER</small><strong>Pedido por voz</strong></div></article><article class="metric-card glass"><span>02</span><div><small>ALTERAR</small><strong>Branch de laboratório</strong></div></article><article class="metric-card glass"><span>03</span><div><small>MOSTRAR</small><strong>Preview antes de publicar</strong></div></article></div>
-        <section class="command-console glass">
-          <div class="section-title"><div><small>HISTÓRICO</small><h2>Comandos da sessão</h2></div><span class="badge subtle">seguro por padrão</span></div>
-          <div id="timeline" class="timeline"><div class="timeline-item assistant"><div class="avatar-mini">P</div><div class="bubble"><strong>Pink</strong><p>Estou pronta. Você pode falar coisas como “abre o CVM”, “adiciona um botão de duplicar lote” ou “mostra como ficou”.</p><time>agora</time></div></div></div>
-          <div class="quick-commands"><button data-command="Abre o CVM Pipe Control e me mostra a tela inicial.">Abrir CVM</button><button data-command="Quero um botão para duplicar lote ao lado de editar.">Adicionar botão</button><button data-command="Deixa essa tela mais clean sem alterar os cálculos.">Melhorar layout</button><button data-command="Mostra o antes e depois dessa alteração.">Antes / Depois</button></div>
-        </section>
-        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-icon">◫</div><h3>Preview do aplicativo</h3><p>Quando a camada de edição do GitHub estiver ligada, a Pink abrirá aqui a versão de teste do aplicativo antes de qualquer publicação.</p><div class="flow"><span>🎙️ Pedido</span><b>→</b><span>💻 Código</span><b>→</b><span>🧪 Teste</span><b>→</b><span>🖥️ Preview</span><b>→</b><span>✅ Aprovar</span></div></div></div></section>
+        <div class="studio-header glass"><div><p class="eyebrow">LIVE ORCHESTRATION</p><h2>Pink em execução</h2></div><div class="studio-actions"><button id="clearBtn" class="secondary-btn">Limpar</button><button id="demoBtn" class="primary-btn">Testar animação</button></div></div>
+        <div class="agent-strip glass" aria-label="Estados da Pink"><div class="agent-node active" data-node="listen"><i></i><span>OUVIR</span></div><b>→</b><div class="agent-node" data-node="think"><i></i><span>PENSAR</span></div><b>→</b><div class="agent-node" data-node="speak"><i></i><span>FALAR</span></div><b>→</b><div class="agent-node" data-node="act"><i></i><span>EXECUTAR</span></div></div>
+        <section class="command-console glass"><div class="section-title"><div><small>HISTÓRICO</small><h2>Conversa da sessão</h2></div><span class="badge subtle">eventos Vapi em tempo real</span></div><div id="timeline" class="timeline"><div class="timeline-item assistant"><div class="avatar-mini">P</div><div class="bubble"><strong>Pink</strong><p>Estou pronta. Toque em iniciar chamada e fale comigo normalmente.</p><time>agora</time></div></div></div><div class="quick-commands"><button data-command="Pink, abre o CVM e me apresenta a tela inicial.">Abrir CVM</button><button data-command="Pink, deixa essa tela mais clean sem alterar os cálculos.">Melhorar layout</button><button data-command="Pink, mostra o antes e depois dessa alteração.">Antes / Depois</button><button data-command="Pink, entra no modo desenvolvedora.">Modo desenvolvedora</button></div></section>
+        <section class="preview-card glass"><div class="preview-toolbar"><div class="traffic"><i></i><i></i><i></i></div><div id="previewAddress" class="address-bar">preview.pink.local</div><button id="expandPreviewBtn" class="icon-btn" aria-label="Expandir preview">⛶</button></div><div id="previewArea" class="preview-area"><div class="preview-empty"><div class="preview-orb"><span></span><span></span><span></span></div><h3 id="previewTitle">Pink Live Voice V2</h3><p id="previewText">Quando você falar, os eventos da chamada aparecem aqui e o avatar reage em tempo real. A próxima camada conecta comandos de voz às telas dos seus sistemas.</p><div class="flow"><span>🎙️ Ouvindo</span><b>→</b><span>🧠 Pensando</span><b>→</b><span>🔊 Roberta</span><b>→</b><span>🖥️ Ação</span></div></div></div></section>
       </section>
     </main>
   </div>
-  <dialog id="settingsDialog" class="settings-dialog"><form method="dialog" class="settings-card"><div class="settings-head"><div><small>CONFIGURAÇÃO</small><h2>Voz da Pink</h2></div><button value="cancel" class="icon-btn">✕</button></div><p>Use uma <strong>Public API Key</strong> do Vapi. Nunca use a chave privada no navegador. A chave pública será salva apenas no armazenamento local deste dispositivo.</p><label>Public API Key do Vapi<input id="publicKeyInput" type="password" autocomplete="off" placeholder="pk_..." /></label><label>ID da assistente<input id="assistantIdInput" type="text" value="5db8d17f-e467-4275-9531-9ccd2c983ff1" /></label><div class="settings-note">No Vapi, restrinja a chave pública ao domínio desta página e somente à assistente Pink.</div><div class="dialog-actions"><button id="removeKeyBtn" type="button" class="danger-btn">Remover chave</button><button id="saveSettingsBtn" type="button" class="primary-btn">Salvar e ativar</button></div></form></dialog>
+  <dialog id="settingsDialog" class="settings-dialog"><form method="dialog" class="settings-card"><div class="settings-head"><div><small>CONFIGURAÇÃO</small><h2>Voz da Pink</h2></div><button value="cancel" class="icon-btn">✕</button></div><p>Use somente uma <strong>Public API Key</strong> do Vapi. Nunca coloque uma chave privada no navegador. A assistente já está configurada no Vapi com a voz Roberta do ElevenLabs.</p><label>Public API Key do Vapi<input id="publicKeyInput" type="password" autocomplete="off" placeholder="pk_..." /></label><label>ID da assistente<input id="assistantIdInput" type="text" value="5db8d17f-e467-4275-9531-9ccd2c983ff1" /></label><div class="settings-note">Restrinja a chave pública ao domínio da Pink e, quando possível, somente à assistente Pink.</div><div class="dialog-actions"><button id="removeKeyBtn" type="button" class="danger-btn">Remover chave</button><button id="saveSettingsBtn" type="button" class="primary-btn">Salvar e ativar</button></div></form></dialog>
   <script src="app.js"></script>
 </body>
 </html>
