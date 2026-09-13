@@ -1,0 +1,1 @@
+Initial state: Supabase registry online, `pink-assets` bucket created, no active GLB/VRM row yet. The portrait fallback remains the expected production visual until the definitive rigged model is uploaded, registered, validated, and activated.
