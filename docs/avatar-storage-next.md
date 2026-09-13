@@ -1,0 +1,1 @@
+Next asset milestone: upload the original/licensed rigged Pink GLB/VRM to `pink-assets/avatars/pink/v1/`, add its registry row as draft, validate it with the model adapter, then atomically mark that row active.
