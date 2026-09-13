@@ -13,13 +13,8 @@ const server = spawn(process.execPath, ['tests/static-server.cjs'], {
 function waitForServer() {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Pink test server timeout')), 8000);
-    server.stdout.on('data', chunk => {
-      if (String(chunk).includes('Pink test server')) { clearTimeout(timer); resolve(); }
-    });
-    server.once('exit', code => {
-      clearTimeout(timer);
-      if (code !== null && code !== 0) reject(new Error(`Pink test server exited ${code}`));
-    });
+    server.stdout.on('data', chunk => { if (String(chunk).includes('Pink test server')) { clearTimeout(timer); resolve(); } });
+    server.once('exit', code => { clearTimeout(timer); if (code !== null && code !== 0) reject(new Error(`Pink test server exited ${code}`)); });
   });
 }
 
@@ -31,6 +26,7 @@ async function smoke(browser, name, contextOptions) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForFunction(() => Boolean(window.PinkCore && window.PinkAvatar3D && window.PinkPerformance), null, { timeout: 12000 });
   await page.waitForFunction(() => Boolean(window.PinkFoundation && window.PinkOperatingCore && window.PinkVoiceOS), null, { timeout: 12000 });
+  await page.waitForFunction(() => Boolean(window.PinkMemoryCore && window.PinkMemoryCloud), null, { timeout: 12000 });
 
   const title = await page.title();
   assert.match(title, /Pink LPS Studio/i, `${name}: title mismatch`);
@@ -53,6 +49,20 @@ async function smoke(browser, name, contextOptions) {
   assert.strictEqual(typeof voice.listeningHealthy, 'boolean', `${name}: Voice OS listening health missing`);
   assert.strictEqual(typeof voice.speakingHealthy, 'boolean', `${name}: Voice OS speaking health missing`);
 
+  const memoryHealth = await page.evaluate(() => ({version:window.PinkMemoryCloud.version,status:window.PinkMemoryCloud.status,health:window.PinkMemoryCloud.health()}));
+  assert.strictEqual(memoryHealth.version,'4.0.0',`${name}: memory version mismatch`);
+  assert.strictEqual(memoryHealth.status,'local-fallback',`${name}: development must not write cloud memory`);
+  assert.strictEqual(memoryHealth.health.ok,true,`${name}: local memory fallback unhealthy`);
+  await page.evaluate(() => window.PinkMemoryCloud.remember({type:'preference',text:'Browser smoke prefere memória persistente',importance:.8}));
+  let recalled=await page.evaluate(() => window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));
+  assert.ok(recalled.length>=1,`${name}: browser memory recall failed`);
+  if(name==='desktop'){
+    await page.reload({waitUntil:'domcontentloaded'});
+    await page.waitForFunction(() => Boolean(window.PinkMemoryCloud), null, {timeout:12000});
+    recalled=await page.evaluate(() => window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));
+    assert.ok(recalled.length>=1,`${name}: cross-page memory persistence failed`);
+  }
+
   const avatar = await page.evaluate(() => window.PinkAvatar3D.snapshot());
   assert.ok(avatar && avatar.state, `${name}: avatar snapshot unavailable`);
   const performance = await page.evaluate(() => window.PinkPerformance.snapshot());
@@ -62,7 +72,7 @@ async function smoke(browser, name, contextOptions) {
   assert.strictEqual(bodyWidth, true, `${name}: horizontal overflow detected`);
   const fatal = pageErrors.filter(message => !/ResizeObserver loop/i.test(message));
   assert.deepStrictEqual(fatal, [], `${name}: page errors: ${fatal.join(' | ')}`);
-  console.log(`Browser smoke ${name}: OK (${performance.tier}, core ${operating.version}, voice ${voice.version})`);
+  console.log(`Browser smoke ${name}: OK (${performance.tier}, core ${operating.version}, voice ${voice.version}, memory ${memoryHealth.version})`);
   await context.close();
 }
 
