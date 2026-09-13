@@ -33,6 +33,7 @@ async function smoke(browser, name, contextOptions) {
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForFunction(() => Boolean(window.PinkCore && window.PinkAvatar3D && window.PinkPerformance), null, { timeout: 12000 });
   await page.waitForFunction(() => Boolean(window.PinkFoundation), null, { timeout: 12000 });
+  await page.waitForFunction(() => Boolean(window.PinkOperatingCore), null, { timeout: 12000 });
 
   const title = await page.title();
   assert.match(title, /Pink LPS Studio/i, `${name}: title mismatch`);
@@ -42,6 +43,13 @@ async function smoke(browser, name, contextOptions) {
 
   const foundation = await page.evaluate(() => window.PinkFoundation.health());
   assert.strictEqual(foundation.ok, true, `${name}: foundation health degraded: ${JSON.stringify(foundation)}`);
+  const operating = await page.evaluate(() => window.PinkOperatingCore.snapshot());
+  assert.strictEqual(operating.version, '1.0.0', `${name}: operating core version mismatch`);
+  assert.strictEqual(operating.awareness.currentAgent, 'chatgpt-supervisor', `${name}: supervisor identity mismatch`);
+  const names = operating.capabilities.map(item => item.name);
+  assert.ok(names.includes('context.snapshot'), `${name}: context capability missing`);
+  assert.ok(names.includes('health.snapshot'), `${name}: health capability missing`);
+
   const avatar = await page.evaluate(() => window.PinkAvatar3D.snapshot());
   assert.ok(avatar && avatar.state, `${name}: avatar snapshot unavailable`);
   const performance = await page.evaluate(() => window.PinkPerformance.snapshot());
@@ -52,7 +60,7 @@ async function smoke(browser, name, contextOptions) {
 
   const fatal = pageErrors.filter(message => !/ResizeObserver loop/i.test(message));
   assert.deepStrictEqual(fatal, [], `${name}: page errors: ${fatal.join(' | ')}`);
-  console.log(`Browser smoke ${name}: OK (${performance.tier})`);
+  console.log(`Browser smoke ${name}: OK (${performance.tier}, core ${operating.version})`);
   await context.close();
 }
 
