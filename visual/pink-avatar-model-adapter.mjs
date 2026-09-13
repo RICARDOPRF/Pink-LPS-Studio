@@ -39,6 +39,20 @@ function safeObject(value) {
   return value && typeof value === 'object' && !Array.isArray(value) ? value : {};
 }
 
+function qualityProfile() {
+  if (window.PinkPerformance?.profile) return window.PinkPerformance.profile;
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const low = (navigator.deviceMemory && navigator.deviceMemory <= 4) || /iPhone|iPad|Android/i.test(navigator.userAgent);
+  return {
+    tier: reduced ? 'eco' : low ? 'balanced' : 'cinematic',
+    targetFps: reduced ? 20 : low ? 30 : 60,
+    modelDpr: reduced ? 1 : low ? 1.2 : 1.65,
+    antialias: !low && !reduced,
+    powerPreference: low || reduced ? 'low-power' : 'high-performance',
+    modelMotionScale: reduced ? 0 : low ? .78 : 1
+  };
+}
+
 function validateModelUrl(value) {
   const url = new URL(String(value || ''), window.location.href);
   const sameOrigin = url.origin === window.location.origin;
@@ -146,16 +160,19 @@ class PinkLoadedAvatar {
     this.metadata = metadata;
     this.destroyed = false;
     this.blinkTimer = 0;
+    this.lastRender = 0;
     this.state = stage.dataset.state || 'idle';
     this.expression = 'neutral';
     this.audioLevel = 0;
     this.morphGroups = buildMorphGroups(root, metadata);
     this.rig = this.resolveRig();
     this.mixer = this.createMixer();
-    this.resizeObserver = new ResizeObserver(() => { this.resize(); this.render(); });
+    this.onQuality = () => { this.resize(); this.render(true); };
+    this.resizeObserver = new ResizeObserver(() => { this.resize(); this.render(true); });
     this.resizeObserver.observe(stage);
+    window.addEventListener('pinkperformance:change', this.onQuality);
     this.resize();
-    this.render();
+    this.render(true);
   }
 
   resolveRig() {
@@ -191,6 +208,8 @@ class PinkLoadedAvatar {
     const rect = this.stage.getBoundingClientRect();
     const width = Math.max(1, Math.round(rect.width));
     const height = Math.max(1, Math.round(rect.height));
+    const q = qualityProfile();
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.modelDpr || 1.2));
     this.renderer.setSize(width, height, false);
     this.camera.aspect = width / height;
     this.camera.updateProjectionMatrix();
@@ -265,7 +284,7 @@ class PinkLoadedAvatar {
       manager.update?.();
     }
     setTargets(this.morphGroups.blink, 1);
-    this.render();
+    this.render(true);
     this.blinkTimer = setTimeout(() => {
       if (this.destroyed) return;
       if (manager?.getExpression?.('blink')) manager.setValue('blink', 0);
@@ -273,7 +292,7 @@ class PinkLoadedAvatar {
       if (manager?.getExpression?.('blinkRight')) manager.setValue('blinkRight', 0);
       manager?.update?.();
       setTargets(this.morphGroups.blink, 0);
-      this.render();
+      this.render(true);
     }, 105);
   }
 
@@ -288,7 +307,8 @@ class PinkLoadedAvatar {
     this.mixer?.update(dt);
     this.vrm?.update?.(dt);
 
-    const motion = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1;
+    const q = qualityProfile();
+    const motion = q.modelMotionScale ?? (window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1);
     const stateFactor = this.state === 'speaking' ? 1 : this.state === 'thinking' ? 0.55 : 0.75;
     this.modelGroup.position.y = Math.sin(elapsed * 1.25) * 0.013 * stateFactor * motion;
     this.modelGroup.rotation.z = Math.sin(elapsed * 0.48) * 0.004 * motion;
@@ -296,8 +316,13 @@ class PinkLoadedAvatar {
     this.render();
   }
 
-  render() {
-    if (!this.destroyed) this.renderer.render(this.scene, this.camera);
+  render(force = false) {
+    if (this.destroyed || document.hidden) return;
+    const fps = Math.max(12, qualityProfile().targetFps || 30);
+    const now = performance.now();
+    if (!force && this.lastRender && now - this.lastRender < 1000 / fps) return;
+    this.lastRender = now;
+    this.renderer.render(this.scene, this.camera);
   }
 
   destroy() {
@@ -305,6 +330,7 @@ class PinkLoadedAvatar {
     this.destroyed = true;
     clearTimeout(this.blinkTimer);
     this.resizeObserver.disconnect();
+    window.removeEventListener('pinkperformance:change', this.onQuality);
     this.mixer?.stopAllAction?.();
     this.root.traverse(object => {
       object.geometry?.dispose?.();
@@ -359,15 +385,15 @@ async function load({ stage, url, format, config = {} }) {
   await preflightModel(modelUrl);
 
   const metadata = safeObject(config.metadata || config.asset?.metadata);
-  const lowPower = (navigator.deviceMemory && navigator.deviceMemory <= 4) || /iPhone|iPad|Android/i.test(navigator.userAgent);
+  const q = qualityProfile();
   const canvas = document.createElement('canvas');
   canvas.className = 'pink-avatar-model-canvas';
   canvas.setAttribute('aria-hidden', 'true');
   stage.prepend(canvas);
 
-  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !lowPower, powerPreference: lowPower ? 'low-power' : 'high-performance' });
+  const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: Boolean(q.antialias), powerPreference: q.powerPreference || 'default' });
   renderer.setClearColor(0x000000, 0);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.2 : 1.65));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.modelDpr || 1.2));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.06;
@@ -395,7 +421,7 @@ async function load({ stage, url, format, config = {} }) {
     stage.dataset.avatarEngine = vrm ? 'three-vrm' : 'three-gltf';
     stage.dataset.avatarVersion = String(config.asset?.version || 'unknown');
     const controller = new PinkLoadedAvatar({ stage, canvas, renderer, scene, camera, modelGroup, root, gltf, vrm, metadata });
-    window.dispatchEvent(new CustomEvent('pinkavatar:adapter-model-ready', { detail: { format: normalizedFormat, url: modelUrl, vrm: Boolean(vrm), fit } }));
+    window.dispatchEvent(new CustomEvent('pinkavatar:adapter-model-ready', { detail: { format: normalizedFormat, url: modelUrl, vrm: Boolean(vrm), fit, quality: q.tier } }));
     return controller;
   } catch (error) {
     renderer.dispose();
@@ -409,8 +435,8 @@ async function load({ stage, url, format, config = {} }) {
 }
 
 window.PinkAvatarModelAdapter = Object.freeze({
-  version: '3.4.0',
+  version: '3.5.0',
   engine: 'three@0.180.0 + @pixiv/three-vrm@3.5.5',
   load
 });
-window.dispatchEvent(new CustomEvent('pinkavatar:adapter-ready', { detail: { version: '3.4.0' } }));
+window.dispatchEvent(new CustomEvent('pinkavatar:adapter-ready', { detail: { version: '3.5.0' } }));
