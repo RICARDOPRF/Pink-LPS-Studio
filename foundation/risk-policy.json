@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "riskClasses": {
+    "READ_ONLY": { "approvalRequired": false, "auditRequired": true },
+    "REVERSIBLE": { "approvalRequired": false, "auditRequired": true },
+    "EXTERNAL_WRITE": { "approvalRequired": true, "auditRequired": true },
+    "DESTRUCTIVE": { "approvalRequired": true, "auditRequired": true },
+    "PRODUCTION": { "approvalRequired": true, "auditRequired": true }
+  },
+  "terminalRunStatuses": ["completed", "failed", "cancelled", "timeout", "blocked_external"],
+  "forbiddenBrowserSecrets": [
+    "service_role",
+    "private_api_key",
+    "github_token",
+    "password",
+    "private_key",
+    "oauth_client_secret"
+  ],
+  "productionRules": {
+    "criticalWriteRequiresExplicitApproval": true,
+    "billingRequiresExplicitApproval": true,
+    "credentialChangeRequiresExplicitApproval": true,
+    "permissionEscalationRequiresExplicitApproval": true,
+    "securityWeakeningRequiresExplicitApproval": true
+  }
+}
