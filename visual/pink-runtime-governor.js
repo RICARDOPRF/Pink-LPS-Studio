@@ -9,9 +9,24 @@
   const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   const PROFILES = ['economy', 'balanced', 'cinematic'];
   const BUDGETS = Object.freeze({
-    economy: { targetFps: 24, maxDpr: 1.15, fx: .62, blur: 7, particles: .55 },
-    balanced: { targetFps: 30, maxDpr: 1.45, fx: .82, blur: 10, particles: .78 },
-    cinematic: { targetFps: 60, maxDpr: 1.8, fx: 1, blur: 14, particles: 1 }
+    economy: {
+      targetFps: 24, maxDpr: 1.15, presenceDpr: 1, modelDpr: 1,
+      antialias: false, powerPreference: 'low-power',
+      fx: .62, blur: 7, particles: .55, presenceParticles: 180, presenceConnections: 24,
+      presenceMotionScale: .45, modelMotionScale: .55
+    },
+    balanced: {
+      targetFps: 30, maxDpr: 1.45, presenceDpr: 1.25, modelDpr: 1.2,
+      antialias: false, powerPreference: 'low-power',
+      fx: .82, blur: 10, particles: .78, presenceParticles: 360, presenceConnections: 48,
+      presenceMotionScale: .75, modelMotionScale: .78
+    },
+    cinematic: {
+      targetFps: 60, maxDpr: 1.8, presenceDpr: 1.7, modelDpr: 1.65,
+      antialias: true, powerPreference: 'high-performance',
+      fx: 1, blur: 14, particles: 1, presenceParticles: 720, presenceConnections: 92,
+      presenceMotionScale: 1, modelMotionScale: 1
+    }
   });
 
   let profile = 'balanced';
@@ -44,6 +59,17 @@
     return ['cinematic', 'desktop-capable'];
   }
 
+  function qualitySnapshot() {
+    const budget = BUDGETS[profile];
+    return {
+      tier: profile,
+      ...budget,
+      reducedMotion: motionQuery.matches,
+      saveData: Boolean(connection?.saveData),
+      hidden: document.hidden
+    };
+  }
+
   function applyProfile(next, why = 'runtime') {
     const normalized = PROFILES.includes(next) ? next : 'balanced';
     profile = normalized;
@@ -54,7 +80,9 @@
     root.style.setProperty('--pink-perf-blur', `${budget.blur}px`);
     root.style.setProperty('--pink-perf-particles', String(budget.particles));
     stage?.setAttribute('data-performance', profile);
-    window.dispatchEvent(new CustomEvent('pinkperformance:profile', { detail: { profile, reason, budget: { ...budget } } }));
+    const detail = { profile, reason, budget: { ...budget }, quality: qualitySnapshot() };
+    window.dispatchEvent(new CustomEvent('pinkperformance:profile', { detail }));
+    window.dispatchEvent(new CustomEvent('pinkperformance:change', { detail }));
     return profile;
   }
 
@@ -118,6 +146,7 @@
       profile,
       reason,
       budget: getBudget(),
+      quality: qualitySnapshot(),
       capabilities: capabilitySnapshot(),
       longTaskScore,
       runtime: runtimeHealth()
@@ -153,9 +182,14 @@
   };
   const onMotion = () => {
     if (motionQuery.matches) applyProfile('economy', 'reduced-motion');
+    else {
+      const [next, why] = chooseInitialProfile();
+      applyProfile(next, why);
+    }
   };
   const onConnection = () => {
-    if (connection?.saveData || /(^|-)2g$/.test(String(connection?.effectiveType || ''))) applyProfile('economy', 'network-budget');
+    const [next, why] = chooseInitialProfile();
+    applyProfile(next, connection?.saveData ? 'network-budget' : why);
   };
   document.addEventListener('visibilitychange', onVisibility);
   motionQuery.addEventListener?.('change', onMotion);
@@ -188,6 +222,7 @@
   window.PinkPerformance = Object.freeze({
     profiles: [...PROFILES],
     get profile() { return profile; },
+    get quality() { return qualitySnapshot(); },
     getBudget,
     setProfile: (next, why = 'manual') => applyProfile(next, why),
     degrade,
