@@ -17,3 +17,10 @@
 @media(prefers-reduced-motion:reduce){.pink-3d-fallback-ring{animation:none}.pink-3d-presence-canvas{opacity:.68}}
 
 .pink-stage.pink-3d-fallback .pink-3d-presence-canvas{display:none}
+
+
+/* Hide portrait overlays only after a validated model has been attached. */
+.pink-stage.pink-avatar-ready .portrait,
+.pink-stage.pink-avatar-ready .eyelid,
+.pink-stage.pink-avatar-ready .lip-sync{visibility:hidden}
+.pink-stage.pink-avatar-ready .pink-3d-presence-canvas{mix-blend-mode:normal;opacity:1;filter:none}
