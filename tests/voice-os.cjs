@@ -12,7 +12,8 @@ const voice = require('../voice/pink-voice-os.js');
   const machine=new voice.VoiceStateMachine();
   machine.set('connecting');machine.set('listening');machine.set('thinking');machine.set('speaking');machine.set('listening');
   assert.strictEqual(machine.snapshot().state,'listening');
-  assert.throws(()=>machine.set('fallback'),/invalid_voice_transition/);
+  // Failover to fallback is valid while listening; reconnect must pass through recovering/error/idle rather than jumping straight to connecting.
+  assert.throws(()=>machine.set('connecting'),/invalid_voice_transition/);
 
   let mode='idle';
   let primaryStarts=0;
