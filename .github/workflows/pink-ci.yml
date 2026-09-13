@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - 'phase/**'
       - 'evolution/**'
       - 'feature/**'
       - 'lab/**'
@@ -24,8 +25,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Secret scan
+        run: node scripts/secret-scan.cjs
+      - name: Dependency and license audit
+        run: node scripts/dependency-audit.cjs
       - name: JavaScript syntax
         run: |
+          node --check pink-public-config.js
+          node --check foundation/pink-foundation.js
           node --check app.js
           node --check pink-core.js
           node --check pink-evolution.js
@@ -41,6 +48,8 @@ jobs:
           node --check visual/pink-holographic-ui.js
           node --check visual/pink-3d-presence.js
           node --check visual/pink-runtime-health.js
+      - name: Foundation safety contracts
+        run: node tests/foundation-safety.cjs
       - name: Presence lifecycle
         run: node tests/presence-lifecycle.cjs
       - name: Avatar controller
@@ -59,3 +68,20 @@ jobs:
         run: node tests/performance-governor.cjs
       - name: Runtime health and avatar performance
         run: node tests/runtime-health.cjs
+
+  browser-smoke:
+    needs: runtime-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Playwright
+        run: npm install --no-save --ignore-scripts playwright@1.63.0
+      - name: Install Chromium
+        run: npx playwright@1.63.0 install --with-deps chromium
+      - name: Desktop and mobile browser smoke
+        run: node tests/browser-smoke.cjs
