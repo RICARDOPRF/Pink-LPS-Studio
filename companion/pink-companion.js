@@ -10,12 +10,23 @@ class PermissionSet{
  allow(cap){this.caps.add(cap);return this}
  revoke(cap){this.caps.delete(cap);return this}
  has(cap){return this.caps.has(cap)}
- inRoot(path=''){const p=String(path).replace(/\\/g,'/');return this.roots.some(root=>p===root||p.startsWith(String(root).replace(/\\/g,'/').replace(/\/$/,'')+'/'))}
+ inRoot(path=''){
+  // Fail closed on ambiguous paths. The native adapter must additionally enforce
+  // canonical real paths and symlink confinement before opening a file.
+  const normalize=value=>{
+   const p=String(value).replace(/\\/g,'/');
+   if(/[\x00-\x1f%]/.test(p)||p.startsWith('//')||!(/^(?:\/|[A-Za-z]:\/)/.test(p)))return null;
+   if(p.split('/').some(part=>part==='.'||part==='..'))return null;
+   return p.replace(/\/+$/,'')||'/';
+  };
+  const p=normalize(path);if(!p)return false;
+  return this.roots.some(root=>{const r=normalize(root);return r!==null&&(p===r||p.startsWith(r==='/'?'/':r+'/'))});
+ }
  snapshot(){return {capabilities:[...this.caps],roots:[...this.roots]}}
 }
 class CompanionBridge{
  constructor(){this.transport=null;this.permissions=new PermissionSet();this.connected=false;this.session=null;this.audit=[]}
- attachTransport(transport,{permissions,sessionToken,expiresAt}={}){if(!transport||typeof transport.request!=='function')throw new Error('companion_transport_required');if(!sessionToken)throw new Error('companion_session_token_required');if(expiresAt&&Date.parse(expiresAt)<=Date.now())throw new Error('companion_session_expired');this.transport=transport;this.permissions=permissions instanceof PermissionSet?permissions:new PermissionSet(permissions||{});this.session={token:sessionToken,expiresAt:expiresAt||new Date(Date.now()+15*60*1000).toISOString()};this.connected=true;return this.snapshot()}
+ attachTransport(transport,{permissions,sessionToken,expiresAt}={}){if(!transport||typeof transport.request!=='function')throw new Error('companion_transport_required');if(!sessionToken)throw new Error('companion_session_token_required');const expiry=expiresAt==null?Date.now()+15*60*1000:Date.parse(expiresAt);if(!Number.isFinite(expiry)||expiry<=Date.now())throw new Error('companion_session_expired');this.transport=transport;this.permissions=permissions instanceof PermissionSet?permissions:new PermissionSet(permissions||{});this.session={token:sessionToken,expiresAt:new Date(expiry).toISOString()};this.connected=true;return this.snapshot()}
  disconnect(reason='manual'){this.connected=false;this.transport=null;this.session=null;this.log('disconnect',{reason});return true}
  log(event,data={}){this.audit.push({at:new Date().toISOString(),event,...clone(data)});this.audit=this.audit.slice(-200)}
  validate(cap,args={},context={}){if(!CAPS[cap])return {ok:false,reason:'capability_unknown'};if(!this.connected||!this.transport)return {ok:false,reason:'companion_disconnected'};if(!this.permissions.has(cap))return {ok:false,reason:'capability_not_authorized'};if(this.session?.expiresAt&&Date.parse(this.session.expiresAt)<=Date.now())return {ok:false,reason:'session_expired'};if((cap==='file.read'||cap==='file.write'||cap==='folder.list')&&!this.permissions.inRoot(args.path||args.root||''))return {ok:false,reason:'path_outside_authorized_roots'};if(CAPS[cap].approval&&!context.approved)return {ok:false,reason:'approval_required'};return {ok:true}}

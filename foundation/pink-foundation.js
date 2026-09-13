@@ -36,7 +36,7 @@
     const errors = [];
     const warnings = [];
     const cfg = config && typeof config === 'object' ? config : {};
-    if (Number(cfg.schemaVersion) !== 1) errors.push('schemaVersion must equal 1');
+    if (![1, 2].includes(Number(cfg.schemaVersion))) errors.push('schemaVersion must equal 1 or 2');
     if (!/^\d+\.\d+\.\d+(?:[-+][a-z0-9.-]+)?$/i.test(String(cfg.appVersion || ''))) errors.push('appVersion must be semver-like');
     if (!ENVIRONMENTS.includes(cfg.environment)) errors.push('environment must be development, preview or production');
 
