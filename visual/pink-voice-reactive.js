@@ -47,7 +47,8 @@
   function releaseAvatarAudio(source = 'synthetic') {
     const avatar = avatarApi();
     const internalAudio = avatar?.controller?.audio;
-    if (internalAudio) {
+    const hadExternalAudio = Boolean(internalAudio?.hasExternalLevel || lastSource === 'elevenlabs-output');
+    if (internalAudio && hadExternalAudio) {
       internalAudio.externalLevel = 0;
       internalAudio.hasExternalLevel = false;
       internalAudio.visemes?.reset?.();
@@ -55,9 +56,11 @@
     }
     smoothedLevel = 0;
     lastLevel = 0;
-    lastSource = source;
-    stage.dataset.audioSource = source;
-    stage.style.removeProperty('--pink-live-audio-level');
+    if (lastSource !== source) {
+      lastSource = source;
+      stage.dataset.audioSource = source;
+    }
+    if (hadExternalAudio) stage.style.removeProperty('--pink-live-audio-level');
   }
 
   function applyLevel(level) {
@@ -102,7 +105,7 @@
       const attack = target > smoothedLevel ? .58 : .28;
       smoothedLevel += (target - smoothedLevel) * attack;
       if (smoothedLevel < .018) smoothedLevel = 0;
-      applyLevel(clamp(smoothedLevel));
+      if (!applyLevel(clamp(smoothedLevel))) releaseAvatarAudio('synthetic');
       sampleCount += 1;
       errorCount = 0;
     } catch (error) {
