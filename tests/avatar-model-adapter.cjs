@@ -16,9 +16,16 @@ assert.match(adapter, /setExpression\(/, 'real model expression bridge missing')
 assert.match(adapter, /blink\(/, 'real model blink bridge missing');
 assert.match(adapter, /MAX_MODEL_BYTES/, 'model size guard missing');
 assert.match(adapter, /MODEL_HOST_SUFFIX/, 'model host allowlist missing');
+assert.match(adapter, /PinkPerformance\?\.profile/, 'performance governor integration missing');
+assert.match(adapter, /modelDpr/, 'model DPR budget missing');
+assert.match(adapter, /targetFps/, 'model render throttle missing');
+assert.match(adapter, /modelMotionScale/, 'model motion budget missing');
+assert.match(adapter, /document\.hidden/, 'hidden-tab render guard missing');
+assert.match(adapter, /pinkperformance:change/, 'live performance profile listener missing');
 assert.match(adapter, /renderer\.dispose\(\)/, 'renderer cleanup missing');
 assert.match(adapter, /forceContextLoss/, 'GPU context cleanup missing');
 assert.match(adapter, /pinkavatar:adapter-ready/, 'adapter ready event missing');
+assert.match(adapter, /version:\s*'3\.5\.0'/, 'adapter runtime version must be 3.5.0');
 
 assert.match(registry, /pinkavatar:adapter-ready/, 'registry must retry after adapter boot');
 assert.match(css, /pink-avatar-model-ready \.portrait/, 'portrait must hide only after real model ready');
@@ -26,7 +33,7 @@ assert.match(css, /pink-avatar-model-ready \.lip-sync/, 'fallback lip overlay mu
 
 assert.match(html, /three@0\.180\.0\/build\/three\.module\.js/, 'Three.js version must be pinned');
 assert.match(html, /@pixiv\/three-vrm@3\.5\.5/, 'three-vrm version must be pinned');
-assert.match(html, /pink-avatar-model-adapter\.mjs\?v=3\.4\.0/, 'adapter module must be wired');
+assert.match(html, /pink-avatar-model-adapter\.mjs\?v=3\.5\.0/, 'adapter module must be wired with 3.5 cache version');
 assert.match(html, /pink-avatar-model-adapter\.css\?v=3\.4\.0/, 'adapter styles must be wired');
 
 console.log('Pink avatar model adapter contract: OK');
