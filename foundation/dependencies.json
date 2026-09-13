@@ -23,6 +23,13 @@
       "purpose": "ElevenLabs conversational voice client"
     },
     {
+      "name": "@supabase/supabase-js",
+      "version": "2.116.0",
+      "source": "jsdelivr",
+      "license": "MIT",
+      "purpose": "Production-only authenticated Memory Cloud adapter; lazy-loaded when cloudMemory is enabled"
+    },
+    {
       "name": "Google Fonts / Inter",
       "version": "remote stylesheet",
       "source": "fonts.googleapis.com",
