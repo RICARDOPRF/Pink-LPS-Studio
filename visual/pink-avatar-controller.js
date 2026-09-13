@@ -54,10 +54,10 @@
     async load(config = {}) {
       const modelUrl = config.modelUrl || config.url || null;
       if (!modelUrl) return this.snapshot();
-      const adapter = config.adapter || window.PinkAvatarModelAdapter;
-      if (!adapter?.load) throw new Error('Pink avatar model adapter is not configured');
       const format = String(config.format || modelUrl.split('.').pop() || '').toLowerCase();
       if (!['glb', 'gltf', 'vrm'].includes(format)) throw new Error(`Unsupported Pink avatar format: ${format || 'unknown'}`);
+      const adapter = config.adapter || window.PinkAvatarModelAdapter;
+      if (!adapter?.load) throw new Error('Pink avatar model adapter is not configured');
       this.destroyModel();
       this.model = await adapter.load({ stage: this.element, url: modelUrl, format, config });
       if (!this.model) throw new Error('Pink avatar model adapter returned no model controller');
@@ -95,7 +95,8 @@
       this.loader.call('setExpression', expression);
     }
     blink() {
-      if (this.destroyed || document.hidden) return;
+      if (this.destroyed) return;
+      if (document.hidden) { this.scheduleBlink(); return; }
       this.element.classList.add('is-blinking');
       this.loader.call('blink');
       clearTimeout(this.blinkEndTimer);
@@ -149,13 +150,17 @@
       this.analyser = null;
       this.buffer = null;
       this.externalLevel = 0;
+      this.hasExternalLevel = false;
     }
     attachAnalyser(analyser) {
       this.analyser = analyser || null;
       this.buffer = analyser ? new Uint8Array(analyser.fftSize || 2048) : null;
     }
-    setLevel(level) { this.externalLevel = clamp(level); }
-    sample() {
+    setLevel(level) {
+      this.externalLevel = clamp(level);
+      this.hasExternalLevel = true;
+    }
+    sample(elapsed = 0) {
       if (this.analyser && this.buffer) {
         this.analyser.getByteTimeDomainData(this.buffer);
         let sum = 0;
@@ -165,14 +170,21 @@
         }
         return clamp(Math.sqrt(sum / this.buffer.length) * 2.6);
       }
-      return this.externalLevel;
+      if (this.hasExternalLevel) return this.externalLevel;
+      // Temporary visual fallback until Phase 3.3 connects real ElevenLabs audio/visemes.
+      return clamp(.16 + Math.abs(Math.sin(elapsed * 8.4)) * .48 + Math.abs(Math.sin(elapsed * 13.7)) * .12);
     }
-    update(isSpeaking) {
-      const level = isSpeaking ? this.sample() : 0;
+    update(isSpeaking, elapsed = 0) {
+      const level = isSpeaking ? this.sample(elapsed) : 0;
       this.visemes.fromAmplitude(level);
       return level;
     }
-    destroy() { this.analyser = null; this.buffer = null; this.externalLevel = 0; }
+    destroy() {
+      this.analyser = null;
+      this.buffer = null;
+      this.externalLevel = 0;
+      this.hasExternalLevel = false;
+    }
   }
 
   class AnimationController {
@@ -243,7 +255,7 @@
       const breatheY = breathWave * 1.65 * profile.amplitude * movement;
       const breatheScale = 1.015 + (breathWave + 1) * .0019 * profile.amplitude * movement;
       const headRoll = this.look.x * .48 * movement;
-      const level = this.audio.update(state === 'speaking');
+      const level = this.audio.update(state === 'speaking', this.elapsed);
 
       this.element.style.setProperty('--pink-look-x', `${(this.look.x * 3.2 * movement).toFixed(2)}px`);
       this.element.style.setProperty('--pink-look-y', `${(this.look.y * 2.0 * movement).toFixed(2)}px`);
