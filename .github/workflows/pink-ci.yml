@@ -25,6 +25,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - name: Secret scan
         run: node scripts/secret-scan.cjs
       - name: Dependency and license audit
@@ -35,6 +39,7 @@ jobs:
           node --check foundation/pink-foundation.js
           node --check core/pink-operating-core.js
           node --check voice/pink-voice-os.js
+          node --check voice/pink-local-voice.js
           node --check memory/pink-memory-core.js
           node --check memory/pink-memory-supabase.mjs
           node --check memory/pink-memory-bridge.js
@@ -53,12 +58,18 @@ jobs:
           node --check visual/pink-holographic-ui.js
           node --check visual/pink-3d-presence.js
           node --check visual/pink-runtime-health.js
+      - name: Python syntax and local voice self-test
+        run: |
+          python -m py_compile companion/local_voice_service.py
+          python companion/local_voice_service.py --self-test
       - name: Foundation safety contracts
         run: node tests/foundation-safety.cjs
       - name: Core intelligence contracts
         run: node tests/core-intelligence.cjs
       - name: Independent audit safety boundaries
         run: node tests/audit-safety-boundaries.cjs
+      - name: Local voice safety contracts
+        run: node tests/local-voice-contracts.cjs
       - name: Voice OS contracts
         run: node tests/voice-os.cjs
       - name: Memory and People Graph contracts
