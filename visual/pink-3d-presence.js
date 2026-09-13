@@ -10,22 +10,22 @@
     const reduced = motionQuery.matches;
     const low = (navigator.deviceMemory && navigator.deviceMemory <= 4) || /iPhone|iPad|Android/i.test(navigator.userAgent);
     return {
-      tier: reduced ? 'eco' : low ? 'balanced' : 'cinematic',
+      tier: reduced ? 'economy' : low ? 'balanced' : 'cinematic',
       reducedMotion: reduced,
-      targetFps: reduced ? 20 : low ? 30 : 60,
+      targetFps: reduced ? 24 : low ? 30 : 60,
       presenceDpr: reduced ? 1 : low ? 1.25 : 1.7,
       antialias: !low && !reduced,
       powerPreference: low || reduced ? 'low-power' : 'high-performance',
-      particles: reduced ? 180 : low ? 360 : 720,
-      connections: reduced ? 24 : low ? 48 : 92,
+      presenceParticles: reduced ? 180 : low ? 360 : 720,
+      presenceConnections: reduced ? 24 : low ? 48 : 92,
       presenceMotionScale: reduced ? 0 : low ? .75 : 1
     };
   };
-  const quality = () => window.PinkPerformance?.profile || fallbackProfile();
+  const quality = () => window.PinkPerformance?.quality || fallbackProfile();
   const bootQuality = quality();
   let reducedMotion = Boolean(bootQuality.reducedMotion);
-  const PARTICLES = bootQuality.particles;
-  const CONNECTIONS = bootQuality.connections;
+  const PARTICLES = bootQuality.presenceParticles || 360;
+  const CONNECTIONS = bootQuality.presenceConnections || 48;
 
   const stateProfiles = {
     idle:      { speed:.16, pulse:.055, ring:.22, energy:.32, color:0x74dcff, accent:0xff6fba },
