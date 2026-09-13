@@ -7,9 +7,16 @@ assert.match(service,/HOST = "127\.0\.0\.1"/,'local service must bind loopback')
 assert.doesNotMatch(service,/['"]shell\.execute['"]|['"]terminal\.execute['"]/,'local voice must not expose shell capabilities');
 assert.match(service,/X-Pink-Token/,'local service must require token for actions');
 assert.match(service,/faster_whisper/,'Whisper adapter missing');
+assert.match(service,/vad_filter=True/,'Whisper VAD missing');
 assert.match(service,/KPipeline/,'Kokoro adapter missing');
+assert.match(service,/edge_tts/,'Edge TTS fallback missing');
+assert.match(service,/openwakeword/,'openWakeWord adapter missing');
+assert.match(service,/wake_model_not_configured/,'wake word must refuse unconfigured model');
+assert.match(service,/sd\.stop\(\)/,'audio interruption missing');
 assert.match(service,/\/api\/chat/,'Ollama adapter missing');
-assert.match(client,/0-per-minute/,'zero-metered voice status missing');
+assert.match(service,/\/v1\/devices/,'device discovery missing');
+assert.match(client,/0-per-minute-local/,'zero-metered local voice status missing');
+for(const method of ['stopAudio','devices','wakeStart','wakeStop','wakeStatus']) assert.ok(client.includes(method),`missing browser method ${method}`);
 assert.doesNotMatch(companion,/['"]shell\.execute['"]/,'Companion must not add shell.execute');
 for(const cap of ['voice.local.health','voice.local.listen','voice.local.speak','voice.local.wake']) assert.ok(companion.includes(`'${cap}'`),`missing ${cap}`);
 console.log('Local voice contracts: PASS');
