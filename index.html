@@ -11,7 +11,16 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="visual/pink-3d-presence.css?v=3.1.1" />
-  <link rel="stylesheet" href="visual/pink-avatar-controller.css?v=3.3.2" />
+  <link rel="stylesheet" href="visual/pink-avatar-controller.css?v=3.4.0" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/",
+        "@pixiv/three-vrm": "https://cdn.jsdelivr.net/npm/@pixiv/three-vrm@3.5.3/lib/three-vrm.module.min.js"
+      }
+    }
+  </script>
 </head>
 <body class="v3"><canvas id="fxCanvas" aria-hidden="true"></canvas>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
@@ -56,8 +65,9 @@
   <script src="pink-store-router.js?v=10"></script>
   <script src="app.js?v=11"></script>
   <script src="visual/pink-avatar-controller.js?v=3.3.2"></script>
+  <script type="module" src="visual/pink-avatar-model-adapter.js?v=3.4.0"></script>
   <script src="visual/pink-avatar-registry.js?v=3.3.3"></script>
   <script src="visual/pink-voice-reactive.js?v=3.3.2"></script>
-  <script type="module" src="visual/pink-3d-presence.js?v=3.1.1"></script>
+  <script type="module" src="visual/pink-3d-presence.js?v=3.1.2"></script>
 </body>
 </html>
