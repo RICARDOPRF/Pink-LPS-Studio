@@ -55,13 +55,13 @@ assert.deepStrictEqual(ledger.timeoutStale(1000), ['run-2']);
 assert.strictEqual(ledger.get('run-2').status, 'timeout');
 
 const badConfig = JSON.parse(JSON.stringify(publicConfig));
-badConfig.supabase.anonKey = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signaturevalue';
+badConfig.supabase.anonKey = 'eyJhbGciOiJIUzI1NiJ9.eyJyb2xlIjoic2VydmljZV9yb2xlIn0.signaturevalue'; // pink-secret-scan-fixture
 assert.strictEqual(foundation.validateConfig(badConfig).ok, false, 'service role key must fail browser config validation');
 
 assert.strictEqual(
-  foundation.redactSecrets('token ghp_abcdefghijklmnopqrstuvwxyz1234567890'),
+  foundation.redactSecrets('token ghp_abcdefghijklmnopqrstuvwxyz1234567890'), // pink-secret-scan-fixture
   'token [REDACTED_GITHUB_TOKEN]'
 );
-assert.match(foundation.redactSecrets('sk-abcdefghijklmnopqrstuvwxyz123456'), /REDACTED_API_KEY/);
+assert.match(foundation.redactSecrets('sk-abcdefghijklmnopqrstuvwxyz123456'), /REDACTED_API_KEY/); // pink-secret-scan-fixture
 
 console.log('Pink Foundation & Safety contract: OK');
