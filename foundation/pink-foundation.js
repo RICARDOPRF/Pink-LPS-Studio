@@ -3,7 +3,6 @@
 (function (root, factory) {
   const createFoundation = factory();
   const api = createFoundation(root?.PinkPublicConfig || {});
-  Object.defineProperty(api, 'createFoundation', { value: createFoundation, enumerable: false });
   if (typeof module === 'object' && module.exports) module.exports = api;
   if (root) root.PinkFoundation = api;
 })(typeof window !== 'undefined' ? window : globalThis, function () {
@@ -185,7 +184,7 @@
     const approval = new ApprovalEngine();
     const ledger = new RunLedger();
     return Object.freeze({
-      version: '0.1.0',
+      version: '0.1.1',
       config,
       validation,
       risk: RISK,
@@ -199,6 +198,7 @@
       RunLedger,
       redactSecrets,
       decodeJwtPayload,
+      createFoundation,
       health: () => ({
         ok: validation.ok && ledger.assertConsistent(),
         environment: config?.environment || null,
