@@ -36,9 +36,11 @@ jobs:
           node --check visual/pink-avatar-controller.js
           node --check visual/pink-avatar-registry.js
           node --check visual/pink-avatar-model-adapter.mjs
+          node --check visual/pink-avatar-performance-bridge.mjs
           node --check visual/pink-voice-reactive.js
           node --check visual/pink-holographic-ui.js
           node --check visual/pink-3d-presence.js
+          node --check visual/pink-runtime-health.js
       - name: Presence lifecycle
         run: node tests/presence-lifecycle.cjs
       - name: Avatar controller
@@ -55,3 +57,5 @@ jobs:
         run: node tests/holographic-ui.cjs
       - name: Adaptive performance governor
         run: node tests/performance-governor.cjs
+      - name: Runtime health and avatar performance
+        run: node tests/runtime-health.cjs
