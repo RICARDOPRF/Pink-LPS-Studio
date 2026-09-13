@@ -32,6 +32,7 @@ jobs:
           node --check pink-nvidia.js
           node --check pink-panel-router.js
           node --check pink-store-router.js
+          node --check visual/pink-performance.js
           node --check visual/pink-avatar-controller.js
           node --check visual/pink-avatar-registry.js
           node --check visual/pink-avatar-model-adapter.mjs
@@ -52,3 +53,5 @@ jobs:
         run: node tests/voice-reactive.cjs
       - name: Holographic UI modes
         run: node tests/holographic-ui.cjs
+      - name: Adaptive performance governor
+        run: node tests/performance-governor.cjs
