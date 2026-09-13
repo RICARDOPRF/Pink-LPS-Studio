@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "runtime": [
     {
       "name": "three",
@@ -16,13 +16,6 @@
       "purpose": "VRM avatar loading and humanoid/expression runtime"
     },
     {
-      "name": "@elevenlabs/client",
-      "version": "1.25.0",
-      "source": "jsdelivr",
-      "license": "MIT",
-      "purpose": "ElevenLabs conversational voice client"
-    },
-    {
       "name": "@supabase/supabase-js",
       "version": "2.116.0",
       "source": "jsdelivr",
@@ -37,6 +30,27 @@
       "purpose": "UI typography"
     }
   ],
+  "providers": [
+    {
+      "name": "Google Gemini Live API",
+      "credential": "GEMINI_API_KEY",
+      "credentialLocation": "Supabase Edge Function secret only",
+      "purpose": "Primary realtime conversation and native audio"
+    },
+    {
+      "name": "NVIDIA NIM",
+      "credential": "NVIDIA_API_KEY",
+      "credentialLocation": "Supabase Edge Function secret only",
+      "purpose": "Nemotron reasoning fallback and specialist NVIDIA models"
+    }
+  ],
+  "nvidiaSkills": [
+    {"name":"rag-blueprint","status":"backend-required","purpose":"RAG knowledge layer"},
+    {"name":"aiq-research","status":"backend-required","purpose":"Deep research"},
+    {"name":"cuopt-install","status":"environment-required","purpose":"Decision optimization"},
+    {"name":"accelerated-computing-cudf","status":"gpu-environment-required","purpose":"GPU dataframe acceleration"},
+    {"name":"deepstream-import-vision-model","status":"gpu-environment-required","purpose":"Vision model pipeline integration"}
+  ],
   "ci": [
     { "name": "actions/checkout", "version": "v4", "source": "GitHub Actions", "license": "MIT", "purpose": "repository checkout" },
     { "name": "actions/setup-node", "version": "v4", "source": "GitHub Actions", "license": "MIT", "purpose": "Node 22 setup" },
@@ -46,6 +60,8 @@
     "runtimePackagesMustBePinned": true,
     "ciPackagesMustBePinned": true,
     "newDependencyRequiresLicenseRecord": true,
-    "unknownLicenseBlocksProduction": true
+    "unknownLicenseBlocksProduction": true,
+    "noBrowserProviderSecrets": true,
+    "noEvidenceNoCapabilityClaim": true
   }
 }
