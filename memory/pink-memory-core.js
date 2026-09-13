@@ -32,7 +32,7 @@
     text=text.replace(/\bBearer\s+[A-Za-z0-9._~+\/-]+=*/gi,'Bearer [REDACTED]');
     text=text.replace(/\b(?:gh[pousr]_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9_-]{16,}|sb_secret_[A-Za-z0-9_-]{12,}|AKIA[0-9A-Z]{16})\b/g,'[REDACTED_SECRET]');
     text=text.replace(/\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{8,}\b/g,'[REDACTED_JWT]');
-    text=text.replace(/\b(password|passwd|secret|api[_-]?key|access[_-]?token|refresh[_-]?token|private[_-]?key)\s*[:=]\s*([^\s,;]+)/gi,'$1=[REDACTED]');
+    text=text.replace(/\b(password|passwd|secret|token|api[_-]?key|access[_-]?token|refresh[_-]?token|private[_-]?key)\s*[:=]\s*([^\s,;]+)/gi,'$1=[REDACTED]');
     return text;
   }
   function containsRedaction(text=''){return /\[REDACTED(?:_[A-Z_]+)?\]/.test(String(text))}
