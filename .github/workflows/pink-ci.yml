@@ -68,3 +68,20 @@ jobs:
         run: node tests/performance-governor.cjs
       - name: Runtime health and avatar performance
         run: node tests/runtime-health.cjs
+
+  browser-smoke:
+    needs: runtime-checks
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install pinned Playwright
+        run: npm install --no-save --ignore-scripts playwright@1.63.0
+      - name: Install Chromium
+        run: npx playwright@1.63.0 install --with-deps chromium
+      - name: Desktop and mobile browser smoke
+        run: node tests/browser-smoke.cjs
