@@ -50,7 +50,7 @@ async function smoke(browser, name, contextOptions) {
   assert.strictEqual(typeof voice.speakingHealthy, 'boolean', `${name}: Voice OS speaking health missing`);
 
   const memoryHealth = await page.evaluate(() => ({version:window.PinkMemoryCloud.version,status:window.PinkMemoryCloud.status,health:window.PinkMemoryCloud.health()}));
-  assert.strictEqual(memoryHealth.version,'4.0.0',`${name}: memory version mismatch`);
+  assert.strictEqual(memoryHealth.version,'4.0.1',`${name}: memory version mismatch`);
   assert.strictEqual(memoryHealth.status,'local-fallback',`${name}: development must not write cloud memory`);
   assert.strictEqual(memoryHealth.health.ok,true,`${name}: local memory fallback unhealthy`);
   await page.evaluate(() => window.PinkMemoryCloud.remember({type:'preference',text:'Browser smoke prefere memória persistente',importance:.8}));
