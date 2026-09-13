@@ -1,0 +1,49 @@
+/* Pink Phase 3.4 — real GLB/VRM model surface. */
+.pink-stage .pink-avatar-model-canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:3;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .32s ease,filter .32s ease;
+  filter:saturate(1.04) contrast(1.02);
+}
+
+.pink-stage.pink-avatar-model-rendering .pink-avatar-model-canvas,
+.pink-stage.pink-avatar-model-ready .pink-avatar-model-canvas{
+  opacity:1;
+}
+
+.pink-stage.pink-avatar-model-ready .portrait{
+  opacity:0;
+  pointer-events:none;
+}
+
+/* Facial overlays belong only to the 2D fallback. Real models receive the same controls as morph targets/bones. */
+.pink-stage.pink-avatar-model-ready .eyelid,
+.pink-stage.pink-avatar-model-ready .lip-sync{
+  opacity:0 !important;
+  pointer-events:none;
+}
+
+.pink-stage.pink-avatar-model-ready[data-state="speaking"] .pink-avatar-model-canvas{
+  filter:saturate(1.08) contrast(1.025) brightness(1.015);
+}
+
+.pink-stage.pink-avatar-model-ready[data-state="thinking"] .pink-avatar-model-canvas{
+  filter:saturate(.98) contrast(1.035);
+}
+
+.pink-stage.pink-avatar-model-ready[data-state="success"] .pink-avatar-model-canvas{
+  filter:saturate(1.08) brightness(1.025);
+}
+
+@media(max-width:760px){
+  .pink-stage .pink-avatar-model-canvas{transition-duration:.2s;filter:none}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .pink-stage .pink-avatar-model-canvas{transition:none}
+}
