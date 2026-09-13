@@ -1,0 +1,40 @@
+name: Pink CI
+
+on:
+  push:
+    branches:
+      - main
+      - 'evolution/**'
+      - 'feature/**'
+      - 'lab/**'
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  runtime-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: JavaScript syntax
+        run: |
+          node --check app.js
+          node --check pink-core.js
+          node --check pink-evolution.js
+          node --check pink-nvidia.js
+          node --check pink-panel-router.js
+          node --check pink-store-router.js
+          node --check visual/pink-avatar-controller.js
+          node --check visual/pink-3d-presence.js
+      - name: Presence lifecycle
+        run: node tests/presence-lifecycle.cjs
+      - name: Avatar controller
+        run: node tests/avatar-controller.cjs

@@ -1,0 +1,54 @@
+/* Pink Phase 3.2 — avatar runtime styles. The current portrait remains the visual fallback. */
+.pink-stage.pink-avatar-runtime{
+  --pink-look-x:0px;
+  --pink-look-y:0px;
+  --pink-breathe-y:0px;
+  --pink-avatar-scale:1.015;
+  --pink-head-roll:0deg;
+  --pink-mouth-open:0;
+  --pink-audio-level:0;
+}
+
+.pink-stage.pink-avatar-runtime .portrait{
+  animation:none !important;
+  transform:
+    translate3d(var(--pink-look-x),calc(var(--pink-look-y) + var(--pink-breathe-y)),0)
+    rotate(var(--pink-head-roll))
+    scale(var(--pink-avatar-scale));
+  transform-origin:50% 54%;
+  transition:filter .26s ease,opacity .26s ease;
+  will-change:transform,filter;
+}
+
+.pink-stage.pink-avatar-runtime .eyelid{animation:none !important;opacity:0}
+.pink-stage.pink-avatar-runtime.is-blinking .eyelid{opacity:.98}
+
+.pink-stage.pink-avatar-runtime .lip-sync{
+  animation:none !important;
+  opacity:0;
+  transform:rotate(-7deg) scaleX(.86) scaleY(calc(.7 + var(--pink-mouth-open) * 2.35));
+  transition:opacity .08s linear;
+}
+.pink-stage.pink-avatar-runtime[data-state="speaking"] .lip-sync{
+  opacity:calc(.22 + var(--pink-mouth-open) * .68);
+  box-shadow:0 0 calc(6px + var(--pink-audio-level) * 12px) rgba(255,86,159,.28);
+}
+
+.pink-stage.pink-avatar-runtime[data-expression="attentive"] .portrait{filter:saturate(1.02) contrast(1.025) brightness(1.015)}
+.pink-stage.pink-avatar-runtime[data-expression="thinking"] .portrait{filter:saturate(.94) contrast(1.035) brightness(.985)}
+.pink-stage.pink-avatar-runtime[data-expression="focused"] .portrait{filter:saturate(.96) contrast(1.045)}
+.pink-stage.pink-avatar-runtime[data-expression="warm"] .portrait{filter:saturate(1.04) contrast(1.02) brightness(1.02)}
+.pink-stage.pink-avatar-runtime[data-expression="confident"] .portrait{filter:saturate(1.03) contrast(1.035)}
+.pink-stage.pink-avatar-runtime[data-expression="concerned"] .portrait{filter:saturate(.86) contrast(1.02) brightness(.94)}
+
+/* A future GLB/VRM adapter may add its own canvas while the portrait remains available as fallback. */
+.pink-stage.pink-avatar-model-ready .portrait{opacity:0;pointer-events:none}
+
+@media(max-width:760px){
+  .pink-stage.pink-avatar-runtime .portrait{will-change:auto}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .pink-stage.pink-avatar-runtime .portrait{transform:scale(1.015);transition:none}
+  .pink-stage.pink-avatar-runtime .lip-sync{transition:none}
+}
