@@ -6,10 +6,26 @@
   if (!stage || window.Pink3DPresence) return;
 
   const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-  let reducedMotion = motionQuery.matches;
-  const lowPower = (navigator.deviceMemory && navigator.deviceMemory <= 4) || /iPhone|iPad|Android/i.test(navigator.userAgent);
-  const PARTICLES = reducedMotion ? 180 : (lowPower ? 360 : 720);
-  const CONNECTIONS = reducedMotion ? 24 : (lowPower ? 48 : 92);
+  const fallbackProfile = () => {
+    const reduced = motionQuery.matches;
+    const low = (navigator.deviceMemory && navigator.deviceMemory <= 4) || /iPhone|iPad|Android/i.test(navigator.userAgent);
+    return {
+      tier: reduced ? 'eco' : low ? 'balanced' : 'cinematic',
+      reducedMotion: reduced,
+      targetFps: reduced ? 20 : low ? 30 : 60,
+      presenceDpr: reduced ? 1 : low ? 1.25 : 1.7,
+      antialias: !low && !reduced,
+      powerPreference: low || reduced ? 'low-power' : 'high-performance',
+      particles: reduced ? 180 : low ? 360 : 720,
+      connections: reduced ? 24 : low ? 48 : 92,
+      presenceMotionScale: reduced ? 0 : low ? .75 : 1
+    };
+  };
+  const quality = () => window.PinkPerformance?.profile || fallbackProfile();
+  const bootQuality = quality();
+  let reducedMotion = Boolean(bootQuality.reducedMotion);
+  const PARTICLES = bootQuality.particles;
+  const CONNECTIONS = bootQuality.connections;
 
   const stateProfiles = {
     idle:      { speed:.16, pulse:.055, ring:.22, energy:.32, color:0x74dcff, accent:0xff6fba },
@@ -58,9 +74,10 @@
       canvas.addEventListener('webglcontextlost', onContextLost);
       stage.prepend(canvas);
 
-      const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:!lowPower, powerPreference:lowPower?'low-power':'default'});
+      const q = quality();
+      const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:Boolean(q.antialias), powerPreference:q.powerPreference || 'default'});
       renderer.setClearColor(0x000000, 0);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.25 : 1.7));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.presenceDpr || 1.25));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
 
       const scene = new THREE.Scene();
@@ -82,7 +99,7 @@
         pos[i*3+2] = Math.sin(a) * Math.cos(b) * r * flatten - .9;
       }
       particleGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const particleMat = new THREE.PointsMaterial({color:0x78dfff, size:lowPower?.026:.033, transparent:true, opacity:.46, depthWrite:false, blending:THREE.AdditiveBlending});
+      const particleMat = new THREE.PointsMaterial({color:0x78dfff, size:q.tier === 'cinematic'?.033:.026, transparent:true, opacity:.46, depthWrite:false, blending:THREE.AdditiveBlending});
       const particles = new THREE.Points(particleGeo, particleMat);
       field.add(particles);
 
@@ -130,7 +147,7 @@
       resize();
       schedule();
       stage.classList.add('pink-3d-ready');
-      window.dispatchEvent(new CustomEvent('pink3d:ready',{detail:{particles:PARTICLES,lowPower,reducedMotion}}));
+      window.dispatchEvent(new CustomEvent('pink3d:ready',{detail:{particles:PARTICLES,quality:q.tier,reducedMotion}}));
     } catch (error) {
       console.warn('Pink 3D: WebGL initialization failed', error);
       addFallback();
@@ -144,6 +161,8 @@
     if(!runtime.renderer||!runtime.camera) return;
     const r=stage.getBoundingClientRect();
     const w=Math.max(1,Math.round(r.width)), h=Math.max(1,Math.round(r.height));
+    const q=quality();
+    runtime.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, q.presenceDpr || 1.25));
     runtime.renderer.setSize(w,h,false);
     runtime.camera.aspect=w/h; runtime.camera.updateProjectionMatrix();
     schedule();
@@ -156,15 +175,16 @@
   function animate(now){
     runtime.raf=0;
     if(!runtime.running||!runtime.renderer||runtime.destroyed||runtime.fallback) return;
-    const interval=1000/(lowPower?30:60);
+    const q=quality();
+    const interval=1000/Math.max(12,q.targetFps||30);
     if(!reducedMotion && runtime.lastFrame && now-runtime.lastFrame<interval){schedule();return;}
     const dt=runtime.lastFrame?Math.min((now-runtime.lastFrame)/1000,.1):0;
     runtime.lastFrame=now;
     if(!reducedMotion) runtime.elapsed+=dt;
     const t=runtime.elapsed, p=profile();
-    const motion=reducedMotion?0:1;
-    runtime.field.rotation.y = t * .045 * p.speed * motion + runtime.pointer.x*.055;
-    runtime.field.rotation.x = Math.sin(t*.18)*.025*motion + runtime.pointer.y*.035;
+    const motion=reducedMotion?0:(q.presenceMotionScale ?? 1);
+    runtime.field.rotation.y = t * .045 * p.speed * motion + runtime.pointer.x*.055*motion;
+    runtime.field.rotation.x = Math.sin(t*.18)*.025*motion + runtime.pointer.y*.035*motion;
     const breathe = 1 + Math.sin(t*(.8+p.speed*.35))*p.pulse*motion;
     runtime.field.scale.setScalar(breathe);
 
@@ -181,13 +201,13 @@
       ring.material.color.setHex(i===1?p.accent:p.color);
     });
     runtime.nodes.children.forEach((n,i)=>{
-      const s=1+Math.sin(t*(1.2+p.speed)+n.userData.phase)*.45*p.energy;
+      const s=1+Math.sin(t*(1.2+p.speed)+n.userData.phase)*.45*p.energy*motion;
       n.scale.setScalar(s); n.material.opacity=.34+p.energy*.48;
       n.material.color.setHex(i%3===0?p.accent:p.color);
     });
 
-    runtime.camera.position.x += ((runtime.pointer.x*.18)-runtime.camera.position.x)*.025;
-    runtime.camera.position.y += ((-runtime.pointer.y*.14)-runtime.camera.position.y)*.025;
+    runtime.camera.position.x += (((runtime.pointer.x*.18)*motion)-runtime.camera.position.x)*.025;
+    runtime.camera.position.y += (((-runtime.pointer.y*.14)*motion)-runtime.camera.position.y)*.025;
     runtime.camera.lookAt(0,0,-.4);
     runtime.renderer.render(runtime.scene,runtime.camera);
     if(!reducedMotion) schedule();
@@ -212,20 +232,28 @@
     schedule();
   }
   function onMotion(){
-    reducedMotion=motionQuery.matches;
+    reducedMotion=quality().reducedMotion ?? motionQuery.matches;
     onPointerLeave();
     runtime.lastFrame=0;
     schedule();
   }
+  function onQuality(){
+    reducedMotion=Boolean(quality().reducedMotion);
+    onPointerLeave();
+    runtime.lastFrame=0;
+    resize();
+  }
   function onContextLost(event){event.preventDefault();addFallback();}
   document.addEventListener('visibilitychange',onVisibility);
   motionQuery.addEventListener('change',onMotion);
+  window.addEventListener('pinkperformance:change',onQuality);
   function destroy(){
     runtime.destroyed=true;runtime.running=false;
     cancelAnimationFrame(runtime.raf);runtime.raf=0;
     observer.disconnect();ro.disconnect();
     document.removeEventListener('visibilitychange',onVisibility);
     motionQuery.removeEventListener('change',onMotion);
+    window.removeEventListener('pinkperformance:change',onQuality);
     stage.removeEventListener('pointermove',onPointerMove);
     stage.removeEventListener('pointerleave',onPointerLeave);
     runtime.renderer?.domElement?.removeEventListener('webglcontextlost',onContextLost);
@@ -242,9 +270,8 @@
 
   window.Pink3DPresence = {
     setState,
-    snapshot:()=>({state:runtime.state,ready:!!runtime.renderer&&!runtime.fallback&&!runtime.destroyed,fallback:runtime.fallback,particles:PARTICLES,lowPower,reducedMotion}),
+    snapshot:()=>({state:runtime.state,ready:!!runtime.renderer&&!runtime.fallback&&!runtime.destroyed,fallback:runtime.fallback,particles:PARTICLES,quality:quality().tier,reducedMotion}),
     destroy
   };
   boot();
 })();
-
