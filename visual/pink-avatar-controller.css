@@ -1,4 +1,4 @@
-/* Pink Phase 3.3.2 — avatar runtime styles with spectrum-aware viseme shapes. */
+/* Pink Phase 3.4 — avatar runtime styles with real model canvas + spectrum-aware fallback visemes. */
 .pink-stage.pink-avatar-runtime{
   --pink-look-x:0px;
   --pink-look-y:0px;
@@ -9,6 +9,7 @@
   --pink-jaw-drop:0;
   --pink-jaw-y:0px;
   --pink-audio-level:0;
+  --pink-model-audio:0;
 }
 
 .pink-stage.pink-avatar-runtime .portrait{
@@ -18,9 +19,24 @@
     rotate(var(--pink-head-roll))
     scale(var(--pink-avatar-scale));
   transform-origin:50% 54%;
-  transition:filter .26s ease,opacity .26s ease;
+  transition:filter .26s ease,opacity .32s ease;
   will-change:transform,filter;
 }
+
+.pink-avatar-model-canvas{
+  position:absolute;
+  inset:0;
+  width:100%;
+  height:100%;
+  z-index:3;
+  pointer-events:none;
+  opacity:0;
+  transition:opacity .36s ease,filter .2s ease;
+  filter:drop-shadow(0 18px 28px rgba(0,0,0,.24));
+}
+.pink-stage.pink-avatar-model-ready .pink-avatar-model-canvas{opacity:1}
+.pink-stage.pink-avatar-model-ready[data-state="speaking"] .pink-avatar-model-canvas{filter:drop-shadow(0 18px 30px rgba(0,0,0,.22)) drop-shadow(0 0 12px rgba(255,101,184,.12))}
+.pink-stage[data-avatar-rig="facial-humanoid"] .pink-avatar-model-canvas{filter:drop-shadow(0 18px 30px rgba(0,0,0,.22)) drop-shadow(0 0 16px rgba(104,222,255,.10))}
 
 .pink-stage.pink-avatar-runtime .eyelid{animation:none !important;opacity:0}
 .pink-stage.pink-avatar-runtime.is-blinking .eyelid{opacity:.98}
@@ -37,8 +53,7 @@
   box-shadow:0 0 calc(6px + var(--pink-audio-level) * 12px) rgba(255,86,159,.28);
 }
 
-/* The portrait fallback cannot deform real geometry, so each estimated viseme changes the mouth overlay silhouette.
-   The same viseme names are forwarded to a future GLB/VRM adapter as actual blendshape targets. */
+/* Portrait fallback mouth shapes. The same viseme names are forwarded to the real model adapter. */
 .pink-stage.pink-avatar-runtime[data-viseme="aa"] .lip-sync{
   border-radius:42% 42% 48% 48%;
   transform:translateY(var(--pink-jaw-y)) rotate(-7deg) scaleX(.94) scaleY(calc(.72 + var(--pink-mouth-open) * 2.75));
@@ -72,15 +87,19 @@
 .pink-stage.pink-avatar-runtime[data-expression="confident"] .portrait{filter:saturate(1.03) contrast(1.035)}
 .pink-stage.pink-avatar-runtime[data-expression="concerned"] .portrait{filter:saturate(.86) contrast(1.02) brightness(.94)}
 
-/* A future GLB/VRM adapter may add its own canvas while the portrait remains available as fallback. */
+/* Once a validated real model is loaded, fake portrait facial overlays are removed from view. */
 .pink-stage.pink-avatar-model-ready .portrait{opacity:0;pointer-events:none}
+.pink-stage.pink-avatar-model-ready .eyelid,
+.pink-stage.pink-avatar-model-ready .lip-sync{opacity:0 !important;pointer-events:none}
 
 @media(max-width:760px){
   .pink-stage.pink-avatar-runtime .portrait{will-change:auto}
   .pink-stage.pink-avatar-runtime .lip-sync{transition-duration:.05s}
+  .pink-avatar-model-canvas{filter:drop-shadow(0 12px 20px rgba(0,0,0,.20))}
 }
 
 @media(prefers-reduced-motion:reduce){
   .pink-stage.pink-avatar-runtime .portrait{transform:scale(1.015);transition:none}
   .pink-stage.pink-avatar-runtime .lip-sync{transition:none}
+  .pink-avatar-model-canvas{transition:none}
 }
