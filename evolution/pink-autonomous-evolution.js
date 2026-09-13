@@ -1,0 +1,25 @@
+// Pink Phase 9 — Autonomous Evolution, laboratory-first and production-protected.
+(function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(typeof window!=='undefined')root.PinkAutonomousEvolution=api})(typeof window!=='undefined'?window:globalThis,function(){
+'use strict';
+const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
+const BLOCKED_ACTIONS=new Set(['merge_main','publish_production','delete_production_data','change_billing','change_credentials','weaken_security','permission_escalation']);
+class CandidateStore{
+ constructor(){this.items=new Map()}
+ key(c){return `${c.kind||'improvement'}:${String(c.title||'').trim().toLowerCase()}`}
+ add(input={}){if(!input.title)throw new Error('candidate_title_required');const key=this.key(input);const existing=this.items.get(key);if(existing){existing.hits+=1;existing.lastSeenAt=new Date().toISOString();existing.evidence=[...new Set([...(existing.evidence||[]),...(Array.isArray(input.evidence)?input.evidence:[input.evidence].filter(Boolean))])].slice(-10);return clone(existing)}const item={id:`cand_${Date.now().toString(36)}_${Math.random().toString(36).slice(2,7)}`,key,kind:input.kind||'improvement',title:String(input.title),evidence:Array.isArray(input.evidence)?input.evidence:[input.evidence].filter(Boolean),impact:Number(input.impact??.5),confidence:Number(input.confidence??.5),risk:Number(input.risk??.3),effort:Number(input.effort??.4),hits:1,status:'candidate',createdAt:new Date().toISOString(),lastSeenAt:new Date().toISOString()};item.score=this.score(item);this.items.set(key,item);return clone(item)}
+ score(c){return Math.max(0,Math.min(1,(c.impact*.38+c.confidence*.27+Math.min(c.hits/5,1)*.15)-c.risk*.12-c.effort*.08))}
+ list(){return [...this.items.values()].sort((a,b)=>b.score-a.score).map(clone)}
+}
+class EvolutionEngine{
+ constructor(){this.candidates=new CandidateStore();this.experiments=[];this.learning=[]}
+ observe(signal={}){const type=signal.type||'observation';if(['bug','security','reliability','performance','ux','provider_failure','workflow_friction','user_correction'].includes(type)){return this.candidates.add({kind:type,title:signal.title||signal.message||type,evidence:signal.evidence||signal.message,impact:signal.impact??(type==='security'?.9:.65),confidence:signal.confidence??.7,risk:signal.risk??.25,effort:signal.effort??.4})}return null}
+ prioritize(limit=10){return this.candidates.list().filter(c=>c.score>=.35).slice(0,limit)}
+ can(action){return !BLOCKED_ACTIONS.has(String(action))}
+ async experiment(candidate,adapters={}){if(!candidate?.id)throw new Error('candidate_required');const exp={id:`exp_${Date.now().toString(36)}`,candidateId:candidate.id,status:'running',branch:null,review:null,result:null,startedAt:new Date().toISOString(),endedAt:null};this.experiments.push(exp);try{if(typeof adapters.createBranch!=='function'||typeof adapters.implement!=='function')throw Object.assign(new Error('evolution_lab_adapter_unavailable'),{code:'BLOCKED_EXTERNAL'});exp.branch=await adapters.createBranch(candidate);exp.result=await adapters.implement(candidate,exp.branch);if(typeof adapters.review==='function')exp.review=await adapters.review(candidate,exp.result);if(exp.review?.decision==='reject')exp.status='rejected_regression';else exp.status='needs_approval';exp.endedAt=new Date().toISOString();return clone(exp)}catch(error){exp.status=error?.code==='BLOCKED_EXTERNAL'?'blocked_external':'failed';exp.result={error:String(error?.message||error)};exp.endedAt=new Date().toISOString();return clone(exp)}}
+ recordLearning(entry){this.learning.push({at:new Date().toISOString(),...clone(entry)});this.learning=this.learning.slice(-200)}
+ snapshot(){return {version:'9.0.0',policy:'LAB_FIRST_NO_SELF_PUBLISH',blockedActions:[...BLOCKED_ACTIONS],candidates:this.candidates.list(),experiments:clone(this.experiments),learning:clone(this.learning)}}
+}
+const engine=new EvolutionEngine();
+if(typeof window!=='undefined'&&window.PinkEvolution?.snapshot){try{const legacy=window.PinkEvolution.snapshot();for(const c of legacy.candidates||[])engine.observe({type:c.kind||'improvement',title:c.title,evidence:c.evidence,impact:c.priority==='high'?.8:.55})}catch(_){ }}
+return {version:'9.0.0',engine,observe:s=>engine.observe(s),prioritize:n=>engine.prioritize(n),experiment:(c,a)=>engine.experiment(c,a),can:a=>engine.can(a),snapshot:()=>engine.snapshot()};
+});
