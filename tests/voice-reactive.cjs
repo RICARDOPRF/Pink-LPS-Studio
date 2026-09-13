@@ -12,21 +12,40 @@ class Style{
   getPropertyValue(name){return this.values.get(name)||''}
 }
 
+function spectrumWithBand(minHz,maxHz,value=220,length=512){
+  const arr=new Uint8Array(length);
+  const hzPerBin=24000/length;
+  const start=Math.max(1,Math.floor(minHz/hzPerBin));
+  const end=Math.min(length,Math.ceil(maxHz/hzPerBin));
+  for(let i=start;i<end;i++)arr[i]=value;
+  return arr;
+}
+function mergeSpectra(...arrays){
+  const out=new Uint8Array(arrays[0].length);
+  for(const arr of arrays)for(let i=0;i<out.length;i++)out[i]=Math.max(out[i],arr[i]);
+  return out;
+}
+
 const stage={dataset:{state:'speaking'},style:new Style()};
 const doc={hidden:false,querySelector:selector=>selector==='#pinkStage'?stage:null};
 let rafSerial=0;
 const rafQueue=new Map();
-let lastAudioLevel=-1;
-let animationSchedules=0;
+let lastFrame=null;
+let releases=0;
 
-const audio={externalLevel:0,hasExternalLevel:false,visemes:{reset(){this.resetCalled=true}}};
 const avatar={
-  controller:{audio,animation:{schedule(){animationSchedules+=1}}},
-  setAudioLevel(level){lastAudioLevel=Number(level);audio.externalLevel=Number(level);audio.hasExternalLevel=true}
+  setVoiceFrame(frame){lastFrame={...frame}},
+  releaseVoiceFrame(){releases+=1;lastFrame=null;return true},
+  snapshot(){return {externalVoiceFrame:Boolean(lastFrame)}}
 };
+let currentSpectrum=mergeSpectra(
+  spectrumWithBand(350,900,205),
+  spectrumWithBand(900,1800,225),
+  spectrumWithBand(1800,3500,190)
+);
 const conversation={
-  getOutputVolume(){return .42},
-  getOutputByteFrequencyData(){return new Uint8Array([18,35,64,92,128,170,210,160,98,44])}
+  getOutputVolume(){return .48},
+  getOutputByteFrequencyData(){return currentSpectrum}
 };
 const voice={mode:'elevenlabs',getConversation(){return conversation}};
 const evolution={recordIssue(){throw new Error('unexpected issue report')}};
@@ -50,13 +69,30 @@ vm.runInNewContext(source,context);
 const api=win.PinkVoiceReactive;
 assert.ok(api,'PinkVoiceReactive API should exist');
 
+const rounded=api.estimateViseme(
+  mergeSpectra(spectrumWithBand(80,350,230),spectrumWithBand(350,900,240),spectrumWithBand(900,1800,70)),
+  .5
+);
+assert.equal(rounded.viseme,'oh','low-frequency dominant frame should estimate rounded OH');
+
+const fricative=api.estimateViseme(
+  mergeSpectra(spectrumWithBand(1800,3500,90),spectrumWithBand(3500,7000,245),spectrumWithBand(7000,10000,220)),
+  .38
+);
+assert.equal(fricative.viseme,'fv','high-frequency dominant frame should estimate FV-like mouth');
+
+const silent=api.estimateViseme(new Uint8Array(512),0);
+assert.equal(silent.viseme,'sil');
+assert.equal(silent.jaw,0);
+
 (async()=>{
   await api.sampleNow();
   const live=api.snapshot();
   assert.equal(live.source,'elevenlabs-output');
   assert.equal(live.active,true);
-  assert.ok(lastAudioLevel>0,'real ElevenLabs output level should reach avatar');
-  assert.equal(audio.hasExternalLevel,true);
+  assert.ok(lastFrame&&lastFrame.level>0,'real ElevenLabs output should create an avatar voice frame');
+  assert.ok(lastFrame.viseme&&lastFrame.viseme!=='sil','voice frame should carry an estimated viseme');
+  assert.ok(lastFrame.jaw>0,'voice frame should carry independent jaw motion');
   assert.ok(Number(stage.style.getPropertyValue('--pink-live-audio-level'))>0);
 
   voice.mode='fallback';
@@ -64,8 +100,7 @@ assert.ok(api,'PinkVoiceReactive API should exist');
   const fallback=api.snapshot();
   assert.equal(fallback.source,'fallback-synthetic');
   assert.equal(fallback.active,false);
-  assert.equal(audio.hasExternalLevel,false,'fallback must release external ElevenLabs level');
-  assert.ok(animationSchedules>0,'avatar animation should be rescheduled after release');
+  assert.ok(releases>0,'fallback must release the external ElevenLabs voice frame');
 
   stage.dataset.state='listening';
   voice.mode='elevenlabs';
@@ -74,5 +109,6 @@ assert.ok(api,'PinkVoiceReactive API should exist');
 
   api.destroy();
   assert.equal(stage.dataset.audioSource,undefined);
-  console.log('PASS: real ElevenLabs audio drives lip sync and safely releases to fallback.');
+  assert.equal(stage.dataset.audioViseme,undefined);
+  console.log('PASS: spectral viseme estimator, jaw frame and fallback release.');
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -1,4 +1,4 @@
-/* Pink Phase 3.2 — avatar runtime styles. The current portrait remains the visual fallback. */
+/* Pink Phase 3.3.2 — avatar runtime styles with spectrum-aware viseme shapes. */
 .pink-stage.pink-avatar-runtime{
   --pink-look-x:0px;
   --pink-look-y:0px;
@@ -6,6 +6,8 @@
   --pink-avatar-scale:1.015;
   --pink-head-roll:0deg;
   --pink-mouth-open:0;
+  --pink-jaw-drop:0;
+  --pink-jaw-y:0px;
   --pink-audio-level:0;
 }
 
@@ -26,12 +28,41 @@
 .pink-stage.pink-avatar-runtime .lip-sync{
   animation:none !important;
   opacity:0;
-  transform:rotate(-7deg) scaleX(.86) scaleY(calc(.7 + var(--pink-mouth-open) * 2.35));
-  transition:opacity .08s linear;
+  transform:translateY(var(--pink-jaw-y)) rotate(-7deg) scaleX(.86) scaleY(calc(.55 + var(--pink-mouth-open) * 2.25));
+  transform-origin:center;
+  transition:opacity .06s linear,transform .07s linear,border-radius .07s linear;
 }
 .pink-stage.pink-avatar-runtime[data-state="speaking"] .lip-sync{
-  opacity:calc(.22 + var(--pink-mouth-open) * .68);
+  opacity:calc(.18 + var(--pink-mouth-open) * .7);
   box-shadow:0 0 calc(6px + var(--pink-audio-level) * 12px) rgba(255,86,159,.28);
+}
+
+/* The portrait fallback cannot deform real geometry, so each estimated viseme changes the mouth overlay silhouette.
+   The same viseme names are forwarded to a future GLB/VRM adapter as actual blendshape targets. */
+.pink-stage.pink-avatar-runtime[data-viseme="aa"] .lip-sync{
+  border-radius:42% 42% 48% 48%;
+  transform:translateY(var(--pink-jaw-y)) rotate(-7deg) scaleX(.94) scaleY(calc(.72 + var(--pink-mouth-open) * 2.75));
+}
+.pink-stage.pink-avatar-runtime[data-viseme="oh"] .lip-sync{
+  border-radius:50%;
+  transform:translateY(var(--pink-jaw-y)) rotate(-7deg) scaleX(.66) scaleY(calc(.95 + var(--pink-mouth-open) * 2.25));
+}
+.pink-stage.pink-avatar-runtime[data-viseme="ee"] .lip-sync{
+  border-radius:45% 45% 38% 38%;
+  transform:translateY(var(--pink-jaw-y)) rotate(-7deg) scaleX(1.12) scaleY(calc(.34 + var(--pink-mouth-open) * 1.05));
+}
+.pink-stage.pink-avatar-runtime[data-viseme="uh"] .lip-sync{
+  border-radius:48%;
+  transform:translateY(var(--pink-jaw-y)) rotate(-7deg) scaleX(.78) scaleY(calc(.58 + var(--pink-mouth-open) * 1.72));
+}
+.pink-stage.pink-avatar-runtime[data-viseme="fv"] .lip-sync{
+  border-radius:44%;
+  transform:translateY(var(--pink-jaw-y)) rotate(-7deg) scaleX(1.02) scaleY(calc(.22 + var(--pink-mouth-open) * .62));
+  opacity:calc(.15 + var(--pink-mouth-open) * .48);
+}
+.pink-stage.pink-avatar-runtime[data-viseme="sil"] .lip-sync{
+  opacity:0;
+  transform:rotate(-7deg) scaleX(.84) scaleY(.18);
 }
 
 .pink-stage.pink-avatar-runtime[data-expression="attentive"] .portrait{filter:saturate(1.02) contrast(1.025) brightness(1.015)}
@@ -46,6 +77,7 @@
 
 @media(max-width:760px){
   .pink-stage.pink-avatar-runtime .portrait{will-change:auto}
+  .pink-stage.pink-avatar-runtime .lip-sync{transition-duration:.05s}
 }
 
 @media(prefers-reduced-motion:reduce){

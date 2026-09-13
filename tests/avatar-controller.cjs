@@ -52,16 +52,24 @@ assert.equal(api.snapshot().hasModel,false);
 assert.equal(stage.classList.contains('pink-avatar-runtime'),true);
 
 api.setState('speaking');
-api.setAudioLevel(.5);
+api.setVoiceFrame({level:.52,viseme:'oh',weight:.64,jaw:.48});
 const jobs=[...rafQueue.values()];rafQueue.clear();jobs.forEach(fn=>fn(100));
 assert.equal(api.snapshot().state,'speaking');
-assert.ok(api.snapshot().visemeWeight>0,'audio level should drive fallback mouth movement');
+assert.equal(api.snapshot().viseme,'oh');
+assert.equal(api.snapshot().externalVoiceFrame,true);
+assert.equal(api.snapshot().jaw,.48);
+assert.ok(Number(stage.style.getPropertyValue('--pink-mouth-open'))>0);
+assert.ok(stage.style.getPropertyValue('--pink-jaw-y').endsWith('px'));
 assert.ok(stage.style.getPropertyValue('--pink-avatar-scale'),'breathing transform should be populated');
 
-api.setViseme('aa',.8);
+api.releaseVoiceFrame();
+assert.equal(api.snapshot().externalVoiceFrame,false);
+
+api.setViseme('aa',.8,.7);
 assert.equal(api.snapshot().viseme,'aa');
 assert.equal(api.snapshot().visemeWeight,.8);
+assert.equal(api.snapshot().jaw,.7);
 
 api.destroy();
 assert.equal(stage.classList.contains('pink-avatar-runtime'),false);
-console.log('PASS: avatar state, fallback motion, viseme/audio bridge and cleanup.');
+console.log('PASS: avatar state, external voice frame, jaw/viseme controls and cleanup.');
