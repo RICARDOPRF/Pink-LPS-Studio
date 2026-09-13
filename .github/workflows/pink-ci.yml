@@ -35,6 +35,9 @@ jobs:
           node --check foundation/pink-foundation.js
           node --check core/pink-operating-core.js
           node --check voice/pink-voice-os.js
+          node --check memory/pink-memory-core.js
+          node --check memory/pink-memory-supabase.mjs
+          node --check memory/pink-memory-bridge.js
           node --check app.js
           node --check pink-core.js
           node --check pink-evolution.js
@@ -56,6 +59,8 @@ jobs:
         run: node tests/core-intelligence.cjs
       - name: Voice OS contracts
         run: node tests/voice-os.cjs
+      - name: Memory and People Graph contracts
+        run: node tests/memory-core.cjs
       - name: Presence lifecycle
         run: node tests/presence-lifecycle.cjs
       - name: Avatar controller
