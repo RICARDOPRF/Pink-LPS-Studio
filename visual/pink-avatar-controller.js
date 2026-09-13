@@ -1,4 +1,4 @@
-// Pink Phase 3.2 — avatar architecture and fallback motion runtime
+// Pink Phase 3.3.2 — avatar architecture, external voice frames and fallback motion runtime.
 // Keeps the current portrait as the visual fallback until an original/licensed GLB/VRM is available.
 (() => {
   const stage = document.querySelector('#pinkStage');
@@ -124,23 +124,30 @@
       this.loader = loader;
       this.current = 'sil';
       this.weight = 0;
+      this.jaw = 0;
     }
-    set(viseme = 'sil', weight = 1) {
+    set(viseme = 'sil', weight = 1, jaw = weight) {
       this.current = String(viseme || 'sil').toLowerCase();
       this.weight = clamp(weight);
+      this.jaw = clamp(jaw);
       this.element.dataset.viseme = this.current;
       this.element.style.setProperty('--pink-mouth-open', String(this.weight));
-      this.loader.call('setViseme', this.current, this.weight);
+      this.element.style.setProperty('--pink-jaw-drop', String(this.jaw));
+      this.element.style.setProperty('--pink-jaw-y', `${(this.jaw * 1.8).toFixed(2)}px`);
+      this.loader.call('setViseme', this.current, this.weight, this.jaw);
+      this.loader.call('setJaw', this.jaw);
     }
     fromAmplitude(level = 0) {
       const normalized = clamp((Number(level) - .03) / .55);
-      this.set(normalized > .72 ? 'aa' : normalized > .38 ? 'oh' : normalized > .12 ? 'eh' : 'sil', normalized);
+      this.set(normalized > .72 ? 'aa' : normalized > .38 ? 'oh' : normalized > .12 ? 'eh' : 'sil', normalized, normalized);
     }
-    reset() { this.set('sil', 0); }
+    reset() { this.set('sil', 0, 0); }
     destroy() {
       this.reset();
       delete this.element.dataset.viseme;
       this.element.style.removeProperty('--pink-mouth-open');
+      this.element.style.removeProperty('--pink-jaw-drop');
+      this.element.style.removeProperty('--pink-jaw-y');
     }
   }
 
@@ -151,6 +158,9 @@
       this.buffer = null;
       this.externalLevel = 0;
       this.hasExternalLevel = false;
+      this.externalViseme = null;
+      this.externalWeight = 0;
+      this.externalJaw = 0;
     }
     attachAnalyser(analyser) {
       this.analyser = analyser || null;
@@ -159,6 +169,23 @@
     setLevel(level) {
       this.externalLevel = clamp(level);
       this.hasExternalLevel = true;
+    }
+    setFrame(frame = {}) {
+      this.externalLevel = clamp(frame.level);
+      this.hasExternalLevel = true;
+      this.externalViseme = frame.viseme ? String(frame.viseme).toLowerCase() : null;
+      this.externalWeight = clamp(frame.weight ?? frame.level);
+      this.externalJaw = clamp(frame.jaw ?? frame.level);
+    }
+    releaseExternal() {
+      const hadExternal = this.hasExternalLevel || Boolean(this.externalViseme);
+      this.externalLevel = 0;
+      this.hasExternalLevel = false;
+      this.externalViseme = null;
+      this.externalWeight = 0;
+      this.externalJaw = 0;
+      if (hadExternal) this.visemes.reset();
+      return hadExternal;
     }
     sample(elapsed = 0) {
       if (this.analyser && this.buffer) {
@@ -171,19 +198,26 @@
         return clamp(Math.sqrt(sum / this.buffer.length) * 2.6);
       }
       if (this.hasExternalLevel) return this.externalLevel;
-      // Temporary visual fallback until Phase 3.3 connects real ElevenLabs audio/visemes.
+      // Synthetic fallback remains available for browser/NVIDIA contingency mode.
       return clamp(.16 + Math.abs(Math.sin(elapsed * 8.4)) * .48 + Math.abs(Math.sin(elapsed * 13.7)) * .12);
     }
     update(isSpeaking, elapsed = 0) {
-      const level = isSpeaking ? this.sample(elapsed) : 0;
-      this.visemes.fromAmplitude(level);
+      if (!isSpeaking) {
+        if (this.visemes.current !== 'sil' || this.visemes.weight) this.visemes.reset();
+        return 0;
+      }
+      const level = this.sample(elapsed);
+      if (this.hasExternalLevel && this.externalViseme) {
+        this.visemes.set(this.externalViseme, this.externalWeight, this.externalJaw);
+      } else {
+        this.visemes.fromAmplitude(level);
+      }
       return level;
     }
     destroy() {
+      this.releaseExternal();
       this.analyser = null;
       this.buffer = null;
-      this.externalLevel = 0;
-      this.hasExternalLevel = false;
     }
   }
 
@@ -296,8 +330,10 @@
       window.dispatchEvent(new CustomEvent('pinkavatar:ready', { detail: this.snapshot() }));
     }
     setState(state) { this.state.set(state); }
-    setViseme(viseme, weight) { this.visemes.set(viseme, weight); }
+    setViseme(viseme, weight, jaw) { this.visemes.set(viseme, weight, jaw); }
     setAudioLevel(level) { this.audio.setLevel(level); this.animation.schedule(); }
+    setVoiceFrame(frame) { this.audio.setFrame(frame); this.animation.schedule(); }
+    releaseVoiceFrame() { const released = this.audio.releaseExternal(); this.animation.schedule(); return released; }
     attachAnalyser(analyser) { this.audio.attachAnalyser(analyser); this.animation.schedule(); }
     loadModel(config) { return this.loader.load(config); }
     snapshot() {
@@ -306,6 +342,8 @@
         expression: this.facial.expression,
         viseme: this.visemes.current,
         visemeWeight: this.visemes.weight,
+        jaw: this.visemes.jaw,
+        externalVoiceFrame: Boolean(this.audio.hasExternalLevel && this.audio.externalViseme),
         reducedMotion: this.animation.reducedMotion,
         ...this.loader.snapshot()
       };
@@ -325,8 +363,10 @@
   window.PinkAvatar3D = {
     controller,
     setState: state => controller.setState(state),
-    setViseme: (viseme, weight) => controller.setViseme(viseme, weight),
+    setViseme: (viseme, weight, jaw) => controller.setViseme(viseme, weight, jaw),
     setAudioLevel: level => controller.setAudioLevel(level),
+    setVoiceFrame: frame => controller.setVoiceFrame(frame),
+    releaseVoiceFrame: () => controller.releaseVoiceFrame(),
     attachAnalyser: analyser => controller.attachAnalyser(analyser),
     loadModel: config => controller.loadModel(config),
     snapshot: () => controller.snapshot(),
