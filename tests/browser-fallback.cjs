@@ -17,6 +17,7 @@ const types={'.html':'text/html','.js':'text/javascript','.mjs':'text/javascript
    await page.route('**/*',route=>new URL(route.request().url()).hostname==='127.0.0.1'?route.continue():route.abort());
    await page.goto(`http://127.0.0.1:${server.address().port}/`,{waitUntil:'networkidle'});
    await page.waitForFunction(()=>window.Pink3DPresence?.snapshot().fallback===true);
+   await page.waitForFunction(()=>document.querySelector('.portrait').complete&&document.querySelector('.portrait').naturalWidth>0);
    const status=await page.evaluate(()=>({presence:Pink3DPresence.snapshot(),avatar:Pink3DPresence.avatarSnapshot(),portrait:getComputedStyle(document.querySelector('.portrait')).visibility,portraitLoaded:document.querySelector('.portrait').naturalWidth>0,ringAnimation:getComputedStyle(document.querySelector('.pink-3d-fallback-ring')).animationName,core:!!window.PinkCore,voice:!!window.PinkVoice,nvidia:!!window.PinkNVIDIA}));
    assert.equal(status.portrait,'visible');assert.equal(status.portraitLoaded,true);assert.equal(status.ringAnimation,'none');assert.equal(status.avatar.hasModel,false);assert.equal(status.core,true);assert.equal(status.voice,true);assert.equal(status.nvidia,true);
    assert.equal(requests.some(url=>/\.glb(?:$|\?)/i.test(url)||url.includes('GLTFLoader')),false);
