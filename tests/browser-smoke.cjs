@@ -14,9 +14,7 @@ function waitForServer() {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => reject(new Error('Pink test server timeout')), 8000);
     server.stdout.on('data', chunk => {
-      if (String(chunk).includes('Pink test server')) {
-        clearTimeout(timer); resolve();
-      }
+      if (String(chunk).includes('Pink test server')) { clearTimeout(timer); resolve(); }
     });
     server.once('exit', code => {
       clearTimeout(timer);
@@ -32,8 +30,7 @@ async function smoke(browser, name, contextOptions) {
   page.on('pageerror', error => pageErrors.push(String(error?.message || error)));
   await page.goto(baseUrl, { waitUntil: 'domcontentloaded', timeout: 20000 });
   await page.waitForFunction(() => Boolean(window.PinkCore && window.PinkAvatar3D && window.PinkPerformance), null, { timeout: 12000 });
-  await page.waitForFunction(() => Boolean(window.PinkFoundation), null, { timeout: 12000 });
-  await page.waitForFunction(() => Boolean(window.PinkOperatingCore), null, { timeout: 12000 });
+  await page.waitForFunction(() => Boolean(window.PinkFoundation && window.PinkOperatingCore && window.PinkVoiceOS), null, { timeout: 12000 });
 
   const title = await page.title();
   assert.match(title, /Pink LPS Studio/i, `${name}: title mismatch`);
@@ -50,6 +47,12 @@ async function smoke(browser, name, contextOptions) {
   assert.ok(names.includes('context.snapshot'), `${name}: context capability missing`);
   assert.ok(names.includes('health.snapshot'), `${name}: health capability missing`);
 
+  const voice = await page.evaluate(() => window.PinkVoiceOS.snapshot());
+  assert.strictEqual(voice.version, '2.0.0', `${name}: Voice OS version mismatch`);
+  assert.ok(['idle','connecting','listening','thinking','speaking','recovering','fallback','error'].includes(voice.state), `${name}: invalid Voice OS state`);
+  assert.strictEqual(typeof voice.listeningHealthy, 'boolean', `${name}: Voice OS listening health missing`);
+  assert.strictEqual(typeof voice.speakingHealthy, 'boolean', `${name}: Voice OS speaking health missing`);
+
   const avatar = await page.evaluate(() => window.PinkAvatar3D.snapshot());
   assert.ok(avatar && avatar.state, `${name}: avatar snapshot unavailable`);
   const performance = await page.evaluate(() => window.PinkPerformance.snapshot());
@@ -57,10 +60,9 @@ async function smoke(browser, name, contextOptions) {
 
   const bodyWidth = await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 2);
   assert.strictEqual(bodyWidth, true, `${name}: horizontal overflow detected`);
-
   const fatal = pageErrors.filter(message => !/ResizeObserver loop/i.test(message));
   assert.deepStrictEqual(fatal, [], `${name}: page errors: ${fatal.join(' | ')}`);
-  console.log(`Browser smoke ${name}: OK (${performance.tier}, core ${operating.version})`);
+  console.log(`Browser smoke ${name}: OK (${performance.tier}, core ${operating.version}, voice ${voice.version})`);
   await context.close();
 }
 
