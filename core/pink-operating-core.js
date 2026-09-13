@@ -241,7 +241,8 @@
     async execute(plan,{approvals={},signal=null}={}){
       if(!plan?.valid) throw new Error(`invalid_plan:${(plan?.unknownCapabilities||[]).join(',')}`);
       const ledger=this.foundation?.ledger;
-      const run=ledger?.start({phase:1,task:plan.objective,risk:highestPlanRisk(plan.steps),metadata:{planId:plan.id}});
+      const registeredRisks=plan.steps.map(step=>({risk:this.capabilities.get(step.capability)?.risk||step.risk}));
+      const run=ledger?.start({phase:1,task:plan.objective,risk:highestPlanRisk([...plan.steps,...registeredRisks]),metadata:{planId:plan.id}});
       const task=this.tasks.create({title:plan.objective,metadata:{planId:plan.id}});this.tasks.transition(task.id,'running');
       this.awareness.update({currentTask:task.id},'execution-start');
       const results=[];
@@ -250,7 +251,12 @@
           if(signal?.aborted){this.tasks.transition(task.id,'cancelled');ledger?.finish(run.id,'cancelled');return {status:'cancelled',results}}
           const descriptor=this.capabilities.get(step.capability);
           if(!descriptor) throw new Error(`unknown_capability:${step.capability}`);
-          const action={id:`${plan.id}:${step.id}`,risk:step.risk,capability:step.capability,input:step.input};
+          // A caller-controlled plan must never reduce a registered capability's risk.
+          // Recheck here as a valid plan can be edited after it was created.
+          this.foundation.normalizeRisk(descriptor.risk);
+          this.foundation.normalizeRisk(step.risk);
+          const effectiveRisk=highestPlanRisk([{risk:descriptor.risk},{risk:step.risk}]);
+          const action={id:`${plan.id}:${step.id}`,risk:effectiveRisk,capability:step.capability,input:step.input};
           const gate=this.foundation?.approval?.canExecute(action,this.approvalFor(step,approvals));
           if(gate && !gate.allowed){
             const blocked={step:step.id,capability:step.capability,status:'blocked_external',reason:gate.reason};results.push(blocked);

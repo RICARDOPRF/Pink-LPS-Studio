@@ -41,6 +41,8 @@
     })
   });
 
+  // Configuration is also read by non-DOM validation tools.
+  if (typeof document === 'undefined') return;
   const phaseModules = Object.freeze([
     ['observability/pink-observability.js','phase10-observability'],
     ['agents/pink-model-router.js','phase5-multi-agent'],

@@ -57,6 +57,8 @@ jobs:
         run: node tests/foundation-safety.cjs
       - name: Core intelligence contracts
         run: node tests/core-intelligence.cjs
+      - name: Independent audit safety boundaries
+        run: node tests/audit-safety-boundaries.cjs
       - name: Voice OS contracts
         run: node tests/voice-os.cjs
       - name: Memory and People Graph contracts
