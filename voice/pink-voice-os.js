@@ -31,7 +31,6 @@
     fallback:new Set(['listening','thinking','speaking','recovering','error','idle','connecting']),
     error:new Set(['recovering','connecting','fallback','idle'])
   });
-  const clamp = (value,min,max)=>Math.min(max,Math.max(min,Number(value)||0));
   const text = (value,max=400)=>String(value??'').replace(/\s+/g,' ').trim().slice(0,max);
   const clone = value => value == null ? value : JSON.parse(JSON.stringify(value));
 
@@ -114,7 +113,12 @@
       };
     }
     conversation(){try{return this.primary.getConversation?.()||null}catch(_){return null}}
-    providerModeNow(){try{return String(this.primary.mode?.()??this.primary.mode??this.providerMode||'idle')}catch(_){return this.providerMode||'idle'}}
+    providerModeNow(){
+      try {
+        const mode = typeof this.primary.mode === 'function' ? this.primary.mode() : this.primary.mode;
+        return String(mode ?? this.providerMode ?? 'idle');
+      } catch (_) { return this.providerMode || 'idle'; }
+    }
     isIOS(){const ua=String(this.environment.userAgent||'');return /iPad|iPhone|iPod/.test(ua)||(this.environment.platform==='MacIntel'&&Number(this.environment.maxTouchPoints)>1)}
     async timed(operation,timeoutMs=this.watchdog.timeoutMs){
       let timer;
