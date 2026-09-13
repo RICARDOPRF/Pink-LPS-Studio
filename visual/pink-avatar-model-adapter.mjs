@@ -265,6 +265,7 @@ class PinkLoadedAvatar {
       manager.update?.();
     }
     setTargets(this.morphGroups.blink, 1);
+    this.render();
     this.blinkTimer = setTimeout(() => {
       if (this.destroyed) return;
       if (manager?.getExpression?.('blink')) manager.setValue('blink', 0);
@@ -313,6 +314,9 @@ class PinkLoadedAvatar {
     this.renderer.dispose();
     this.renderer.forceContextLoss?.();
     this.canvas.remove();
+    delete this.stage.dataset.avatarFormat;
+    delete this.stage.dataset.avatarEngine;
+    delete this.stage.dataset.avatarVersion;
   }
 }
 
