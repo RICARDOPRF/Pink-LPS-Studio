@@ -33,11 +33,14 @@ jobs:
           node --check pink-panel-router.js
           node --check pink-store-router.js
           node --check visual/pink-avatar-controller.js
+          node --check visual/pink-avatar-registry.js
           node --check visual/pink-voice-reactive.js
           node --check visual/pink-3d-presence.js
       - name: Presence lifecycle
         run: node tests/presence-lifecycle.cjs
       - name: Avatar controller
         run: node tests/avatar-controller.cjs
+      - name: Avatar Supabase registry
+        run: node tests/avatar-registry.cjs
       - name: Voice reactive lip sync
         run: node tests/voice-reactive.cjs
