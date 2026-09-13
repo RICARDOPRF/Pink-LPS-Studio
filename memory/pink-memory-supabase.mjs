@@ -27,13 +27,21 @@ async function waitForConfig(timeoutMs=2500){
   while(!window.PinkPublicConfig&&Date.now()-started<timeoutMs)await new Promise(r=>setTimeout(r,40));
   return window.PinkPublicConfig||null;
 }
+function resolveActiveTenant(memberships=[]){
+  if(!memberships.length)throw new Error('supabase_memory_tenant_missing');
+  let preferred='';
+  try{preferred=String(sessionStorage.getItem('pink_active_tenant_v1')||localStorage.getItem('pink_active_tenant_v1')||'').trim()}catch(_){}
+  if(preferred){const match=memberships.find(item=>item.tenant_id===preferred);if(match)return match.tenant_id;throw new Error('supabase_memory_active_tenant_not_authorized')}
+  if(memberships.length===1)return memberships[0].tenant_id;
+  throw new Error('supabase_memory_active_tenant_required');
+}
 
 async function bootstrap(){
   const publicConfig=await waitForConfig();
   const cfg=publicConfig?.supabase;
   const enabled=publicConfig?.features?.cloudMemory===true;
   const fallback=new core.LocalMemoryAdapter({storage:window.localStorage});
-  const api={version:'4.0.0',status:'booting',service:new core.MemoryService({fallback}),health:()=>api.service.health()};
+  const api={version:'4.0.1',status:'booting',service:new core.MemoryService({fallback}),health:()=>api.service.health()};
   attachApi(api);window.PinkMemoryCloud=api;
   if(!enabled||!cfg?.url||!cfg?.anonKey){api.status='local-fallback';window.PinkOperatingCore?.health?.recordExternal?.('memory-cloud',api.health());window.dispatchEvent(new CustomEvent('pinkmemory:ready',{detail:{status:api.status,...api.health()}}));return api}
   try{
@@ -42,8 +50,8 @@ async function bootstrap(){
     let {data:{session}}=await client.auth.getSession();
     if(!session){const result=await client.auth.signInAnonymously({options:{data:{app:'pink-lps-studio'}}});if(result.error)throw result.error;session=result.data.session}
     if(!session?.user?.id)throw new Error('supabase_memory_session_missing');
-    const {data:memberships,error}=await client.from('pink_tenant_memberships').select('tenant_id,role').eq('user_id',session.user.id).limit(1);if(error)throw error;
-    const tenantId=memberships?.[0]?.tenant_id;if(!tenantId)throw new Error('supabase_memory_tenant_missing');
+    const {data:memberships,error}=await client.from('pink_tenant_memberships').select('tenant_id,role').eq('user_id',session.user.id);if(error)throw error;
+    const tenantId=resolveActiveTenant(memberships||[]);
     const primary=new SupabaseMemoryAdapter({client,tenantId,userId:session.user.id});
     api.service=new core.MemoryService({primary,fallback});api.status='cloud';api.client=client;api.tenantId=tenantId;api.userId=session.user.id;attachApi(api);
     const legacy=core.migrateLegacyPeople(window.localStorage);for(const person of legacy)await api.service.rememberPerson(person).catch(()=>{});
