@@ -1,0 +1,36 @@
+/* Pink Phase 3.5 — adaptive visual cost controls. */
+body[data-pink-performance="eco"] .glass{
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+body[data-pink-performance="eco"] .ambient{
+  filter:blur(54px);
+  opacity:.10;
+}
+body[data-pink-performance="eco"] .pink-hud-card,
+body[data-pink-performance="eco"] .pink-hud-core{
+  backdrop-filter:none;
+  -webkit-backdrop-filter:none;
+  box-shadow:none;
+}
+body[data-pink-performance="eco"] .pink-hud::before,
+body[data-pink-performance="eco"] .pink-hud-corner{
+  opacity:.32;
+}
+body[data-pink-performance="eco"] .scanline{
+  animation-duration:10s;
+  opacity:.25;
+}
+body[data-pink-performance="eco"] .preview-card,
+body[data-pink-performance="eco"] .assistant-panel{
+  box-shadow:0 16px 44px rgba(0,0,0,.28);
+}
+body[data-pink-performance="balanced"] .glass{
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+
+@media(prefers-reduced-motion:reduce){
+  .ambient{display:none}
+  .scanline,.preview-orb span,.voice-pulse{animation:none!important}
+}

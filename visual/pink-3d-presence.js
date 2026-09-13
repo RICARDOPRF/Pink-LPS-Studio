@@ -1,15 +1,23 @@
-// Pink Phase 3 — real WebGL/Three.js presence layer
+// Pink Phase 3.5 — adaptive WebGL/Three.js presence layer.
 // Visual-only: no microphone, memory, auth, tool or production behavior is changed.
 (() => {
-  const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+  const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
   const stage = document.querySelector('#pinkStage');
   if (!stage || window.Pink3DPresence) return;
 
   const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
   let reducedMotion = motionQuery.matches;
-  const lowPower = (navigator.deviceMemory && navigator.deviceMemory <= 4) || /iPhone|iPad|Android/i.test(navigator.userAgent);
-  const PARTICLES = reducedMotion ? 180 : (lowPower ? 360 : 720);
-  const CONNECTIONS = reducedMotion ? 24 : (lowPower ? 48 : 92);
+  const fallbackProfile = () => {
+    const mobile = /iPhone|iPad|Android/i.test(navigator.userAgent);
+    const low = (navigator.deviceMemory && navigator.deviceMemory <= 4) || mobile;
+    return low
+      ? { tier:'balanced', maxFps:30, maxDpr:1.25, particles:360, connections:48 }
+      : { tier:'high', maxFps:60, maxDpr:1.7, particles:720, connections:92 };
+  };
+  const readPerformance = () => window.PinkPerformance?.profile?.() || fallbackProfile();
+  const initialPerformance = readPerformance();
+  const PARTICLES = reducedMotion ? Math.min(160, initialPerformance.particles || 160) : (initialPerformance.particles || 360);
+  const CONNECTIONS = reducedMotion ? Math.min(20, initialPerformance.connections || 20) : (initialPerformance.connections || 48);
 
   const stateProfiles = {
     idle:      { speed:.16, pulse:.055, ring:.22, energy:.32, color:0x74dcff, accent:0xff6fba },
@@ -26,7 +34,7 @@
   const runtime = {
     renderer:null, scene:null, camera:null, field:null, rings:[], nodes:null,
     state:stage.dataset.state || 'idle', running:!document.hidden, destroyed:false, raf:0, lastFrame:0, elapsed:0,
-    pointer:{x:0,y:0}, fallback:false
+    pointer:{x:0,y:0}, fallback:false, performance:initialPerformance
   };
 
   function addFallback() {
@@ -58,9 +66,13 @@
       canvas.addEventListener('webglcontextlost', onContextLost);
       stage.prepend(canvas);
 
-      const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:!lowPower, powerPreference:lowPower?'low-power':'default'});
+      const renderer = new THREE.WebGLRenderer({
+        canvas, alpha:true,
+        antialias:runtime.performance.tier === 'high',
+        powerPreference:runtime.performance.tier === 'high' ? 'high-performance' : 'low-power'
+      });
       renderer.setClearColor(0x000000, 0);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 1.25 : 1.7));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, runtime.performance.maxDpr || 1.25));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
 
       const scene = new THREE.Scene();
@@ -82,7 +94,11 @@
         pos[i*3+2] = Math.sin(a) * Math.cos(b) * r * flatten - .9;
       }
       particleGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const particleMat = new THREE.PointsMaterial({color:0x78dfff, size:lowPower?.026:.033, transparent:true, opacity:.46, depthWrite:false, blending:THREE.AdditiveBlending});
+      const particleMat = new THREE.PointsMaterial({
+        color:0x78dfff,
+        size:runtime.performance.tier === 'high' ? .033 : .026,
+        transparent:true, opacity:.46, depthWrite:false, blending:THREE.AdditiveBlending
+      });
       const particles = new THREE.Points(particleGeo, particleMat);
       field.add(particles);
 
@@ -117,9 +133,10 @@
       const nodeGeo = new THREE.IcosahedronGeometry(.055,1);
       const nodeMat = new THREE.MeshBasicMaterial({color:0xb7efff,transparent:true,opacity:.72,blending:THREE.AdditiveBlending});
       const nodes = new THREE.Group();
-      for(let i=0;i<10;i++){
+      const nodeCount = runtime.performance.tier === 'eco' ? 5 : 10;
+      for(let i=0;i<nodeCount;i++){
         const n = new THREE.Mesh(nodeGeo,nodeMat.clone());
-        const a=(i/10)*Math.PI*2;
+        const a=(i/nodeCount)*Math.PI*2;
         n.position.set(Math.cos(a)*3.1, Math.sin(a*1.7)*1.3, Math.sin(a)*1.15-.7);
         n.userData={phase:i*.7}; nodes.add(n);
       }
@@ -130,7 +147,7 @@
       resize();
       schedule();
       stage.classList.add('pink-3d-ready');
-      window.dispatchEvent(new CustomEvent('pink3d:ready',{detail:{particles:PARTICLES,lowPower,reducedMotion}}));
+      window.dispatchEvent(new CustomEvent('pink3d:ready',{detail:{particles:PARTICLES,connections:CONNECTIONS,performance:runtime.performance.tier,reducedMotion}}));
     } catch (error) {
       console.warn('Pink 3D: WebGL initialization failed', error);
       addFallback();
@@ -156,7 +173,7 @@
   function animate(now){
     runtime.raf=0;
     if(!runtime.running||!runtime.renderer||runtime.destroyed||runtime.fallback) return;
-    const interval=1000/(lowPower?30:60);
+    const interval=1000/Math.max(1, runtime.performance.maxFps || 30);
     if(!reducedMotion && runtime.lastFrame && now-runtime.lastFrame<interval){schedule();return;}
     const dt=runtime.lastFrame?Math.min((now-runtime.lastFrame)/1000,.1):0;
     runtime.lastFrame=now;
@@ -217,15 +234,27 @@
     runtime.lastFrame=0;
     schedule();
   }
+  function onPerformance(event){
+    runtime.performance = event?.detail || readPerformance();
+    if(runtime.renderer){
+      runtime.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, runtime.performance.maxDpr || 1.25));
+      resize();
+    }
+    runtime.lastFrame=0;
+    schedule();
+  }
   function onContextLost(event){event.preventDefault();addFallback();}
   document.addEventListener('visibilitychange',onVisibility);
   motionQuery.addEventListener('change',onMotion);
+  window.addEventListener('pinkperformance:change',onPerformance);
+
   function destroy(){
     runtime.destroyed=true;runtime.running=false;
     cancelAnimationFrame(runtime.raf);runtime.raf=0;
     observer.disconnect();ro.disconnect();
     document.removeEventListener('visibilitychange',onVisibility);
     motionQuery.removeEventListener('change',onMotion);
+    window.removeEventListener('pinkperformance:change',onPerformance);
     stage.removeEventListener('pointermove',onPointerMove);
     stage.removeEventListener('pointerleave',onPointerLeave);
     runtime.renderer?.domElement?.removeEventListener('webglcontextlost',onContextLost);
@@ -242,9 +271,18 @@
 
   window.Pink3DPresence = {
     setState,
-    snapshot:()=>({state:runtime.state,ready:!!runtime.renderer&&!runtime.fallback&&!runtime.destroyed,fallback:runtime.fallback,particles:PARTICLES,lowPower,reducedMotion}),
+    snapshot:()=>({
+      state:runtime.state,
+      ready:!!runtime.renderer&&!runtime.fallback&&!runtime.destroyed,
+      fallback:runtime.fallback,
+      particles:PARTICLES,
+      connections:CONNECTIONS,
+      performance:runtime.performance.tier,
+      maxFps:runtime.performance.maxFps,
+      maxDpr:runtime.performance.maxDpr,
+      reducedMotion
+    }),
     destroy
   };
   boot();
 })();
-
