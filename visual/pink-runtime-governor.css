@@ -1,0 +1,42 @@
+/* Pink Phase 3.5 — adaptive visual budgets. */
+:root{
+  --pink-perf-fx:1;
+  --pink-perf-blur:14px;
+  --pink-perf-particles:1;
+}
+body[data-pink-performance="economy"] .ambient,
+body[data-pink-performance="economy"] .pink-hud::before{opacity:.35!important}
+body[data-pink-performance="economy"] .glass{backdrop-filter:blur(var(--pink-perf-blur))!important;-webkit-backdrop-filter:blur(var(--pink-perf-blur))!important}
+body[data-pink-performance="economy"] .pink-3d-presence-canvas{opacity:.58!important;filter:saturate(.96)!important}
+body[data-pink-performance="economy"] .pink-hud{opacity:.78}
+body[data-pink-performance="economy"] .pink-hud-card,
+body[data-pink-performance="economy"] .pink-hud-core{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+body[data-pink-performance="economy"] .pink-avatar-model-canvas{image-rendering:auto}
+
+body[data-pink-performance="balanced"] .glass{backdrop-filter:blur(var(--pink-perf-blur));-webkit-backdrop-filter:blur(var(--pink-perf-blur))}
+body[data-pink-performance="balanced"] .pink-3d-presence-canvas{opacity:.8}
+
+body[data-pink-visibility="paused"] .ambient,
+body[data-pink-visibility="paused"] .pink-hud{animation-play-state:paused!important}
+body[data-pink-visibility="paused"] .pink-3d-presence-canvas,
+body[data-pink-visibility="paused"] .pink-avatar-model-canvas{visibility:hidden}
+
+.pink-stage[data-webgl-health="lost"]::before{
+  content:"RECOVERING WEBGL";
+  position:absolute;left:50%;top:50%;z-index:8;
+  transform:translate(-50%,-50%);
+  padding:7px 10px;border:1px solid rgba(255,120,157,.25);border-radius:999px;
+  background:rgba(13,5,11,.58);color:rgba(255,213,226,.86);
+  font:600 7px/1 Inter,sans-serif;letter-spacing:.14em;
+  pointer-events:none;
+}
+
+body[data-pink-runtime-health="degraded"] #systemBadge::after{content:" · SAFE MODE";opacity:.72;font-size:.78em}
+
+@media(max-width:760px){
+  body[data-pink-performance="balanced"] .pink-3d-presence-canvas{opacity:.7}
+  body[data-pink-performance="economy"] .pink-hud-corner{opacity:.32}
+}
+@media(prefers-reduced-motion:reduce){
+  .ambient,.pink-hud,.pink-stage::before,.pink-stage::after{animation:none!important;transition:none!important}
+}
