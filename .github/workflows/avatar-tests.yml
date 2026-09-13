@@ -1,0 +1,37 @@
+name: Pink avatar tests
+on:
+  push:
+    branches: [evolution/phase-3-2-avatar-infrastructure]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'visual/**'
+      - 'tests/**'
+      - 'index.html'
+      - '.github/workflows/avatar-tests.yml'
+permissions:
+  contents: read
+jobs:
+  avatar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - name: Syntax and controller tests
+        run: |
+          node --check visual/avatar/controllers.mjs
+          node --check visual/avatar/runtime.mjs
+          node --check visual/pink-3d-presence.js
+          node tests/avatar-controllers.mjs
+          node tests/presence-lifecycle.cjs
+      - name: Install isolated browser test dependency
+        run: npm install --prefix "$RUNNER_TEMP/pink-browser" --no-audit --no-fund --ignore-scripts playwright@1.62.1
+      - name: Install Chromium
+        run: node "$RUNNER_TEMP/pink-browser/node_modules/playwright/cli.js" install --with-deps chromium --only-shell
+      - name: Browser fallback smoke test
+        run: NODE_PATH="$RUNNER_TEMP/pink-browser/node_modules" node tests/browser-fallback.cjs

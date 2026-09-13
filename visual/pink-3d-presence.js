@@ -1,3 +1,4 @@
+import { createAvatarRuntime } from './avatar/runtime.mjs';
 // Pink Phase 3 — real WebGL/Three.js presence layer
 // Visual-only: no microphone, memory, auth, tool or production behavior is changed.
 (() => {
@@ -30,6 +31,7 @@
   };
 
   function addFallback() {
+    runtime.avatar?.destroy();
     runtime.running = false;
     cancelAnimationFrame(runtime.raf);
     runtime.renderer?.domElement?.remove();
@@ -127,6 +129,8 @@
 
       runtime.renderer=renderer; runtime.scene=scene; runtime.camera=camera; runtime.field=field;
       runtime.particles=particles; runtime.lines=lines; runtime.rings=rings; runtime.nodes=nodes;
+      runtime.avatar=createAvatarRuntime({THREE,scene,stage,invalidate:schedule});
+      runtime.avatar.start();
       resize();
       schedule();
       stage.classList.add('pink-3d-ready');
@@ -189,6 +193,7 @@
     runtime.camera.position.x += ((runtime.pointer.x*.18)-runtime.camera.position.x)*.025;
     runtime.camera.position.y += ((-runtime.pointer.y*.14)-runtime.camera.position.y)*.025;
     runtime.camera.lookAt(0,0,-.4);
+    runtime.avatar?.update(dt,now,{reducedMotion});
     runtime.renderer.render(runtime.scene,runtime.camera);
     if(!reducedMotion) schedule();
   }
@@ -222,6 +227,7 @@
   motionQuery.addEventListener('change',onMotion);
   function destroy(){
     runtime.destroyed=true;runtime.running=false;
+    runtime.avatar?.destroy();
     cancelAnimationFrame(runtime.raf);runtime.raf=0;
     observer.disconnect();ro.disconnect();
     document.removeEventListener('visibilitychange',onVisibility);
@@ -242,9 +248,12 @@
 
   window.Pink3DPresence = {
     setState,
+    avatarSnapshot:()=>runtime.avatar?.snapshot()||{status:'fallback',hasModel:false},
+    pushVisemes:(values,duration)=>runtime.avatar?.pushVisemes(values,duration),
     snapshot:()=>({state:runtime.state,ready:!!runtime.renderer&&!runtime.fallback&&!runtime.destroyed,fallback:runtime.fallback,particles:PARTICLES,lowPower,reducedMotion}),
     destroy
   };
   boot();
 })();
+
 

@@ -10,7 +10,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="visual/pink-3d-presence.css?v=3.1.1" />
+  <link rel="stylesheet" href="visual/pink-3d-presence.css?v=3.2.0" />
+  <script type="importmap">
+    {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}
+  </script>
 </head>
 <body class="v3"><canvas id="fxCanvas" aria-hidden="true"></canvas>
   <div class="ambient ambient-a"></div><div class="ambient ambient-b"></div>
@@ -19,7 +22,7 @@
     <main class="workspace">
       <aside class="assistant-panel glass">
         <div id="pinkStage" class="pink-stage" data-state="idle" aria-live="polite">
-          <img src="pink-avatar-reference.webp" alt="Pink, assistente virtual humanoide da LPS" class="portrait" />
+          <img src="pink-avatar-reference.webp" onerror="this.onerror=null;this.src='pink-avatar.svg'" alt="Pink, assistente virtual humanoide da LPS" class="portrait" />
           <span class="stage-vignette"></span><span class="scanline"></span><span class="eyelid eyelid-left"></span><span class="eyelid eyelid-right"></span><span class="lip-sync"></span><span id="voicePulse" class="voice-pulse" aria-hidden="true"></span>
           <div class="state-pill"><i></i><span id="avatarStateText">Pronta</span></div>
           <div class="voice-signature"><span>VOICE</span><strong>Roberta · ElevenLabs</strong></div>
@@ -54,6 +57,7 @@
   <script src="pink-panel-router.js?v=10"></script>
   <script src="pink-store-router.js?v=10"></script>
   <script src="app.js?v=11"></script>
-  <script type="module" src="visual/pink-3d-presence.js?v=3.1.1"></script>
+  <script type="module" src="visual/pink-3d-presence.js?v=3.2.0"></script>
 </body>
 </html>
+
