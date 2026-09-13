@@ -33,6 +33,7 @@ jobs:
         run: |
           node --check pink-public-config.js
           node --check foundation/pink-foundation.js
+          node --check core/pink-operating-core.js
           node --check app.js
           node --check pink-core.js
           node --check pink-evolution.js
@@ -50,6 +51,8 @@ jobs:
           node --check visual/pink-runtime-health.js
       - name: Foundation safety contracts
         run: node tests/foundation-safety.cjs
+      - name: Core intelligence contracts
+        run: node tests/core-intelligence.cjs
       - name: Presence lifecycle
         run: node tests/presence-lifecycle.cjs
       - name: Avatar controller
