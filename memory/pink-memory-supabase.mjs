@@ -1,5 +1,3 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm';
-
 const core=window.PinkMemoryCore;
 if(!core) throw new Error('PinkMemoryCore missing');
 
@@ -33,12 +31,13 @@ async function waitForConfig(timeoutMs=2500){
 async function bootstrap(){
   const publicConfig=await waitForConfig();
   const cfg=publicConfig?.supabase;
-  const enabled=publicConfig?.features?.cloudMemory!==false;
+  const enabled=publicConfig?.features?.cloudMemory===true;
   const fallback=new core.LocalMemoryAdapter({storage:window.localStorage});
   const api={version:'4.0.0',status:'booting',service:new core.MemoryService({fallback}),health:()=>api.service.health()};
   attachApi(api);window.PinkMemoryCloud=api;
   if(!enabled||!cfg?.url||!cfg?.anonKey){api.status='local-fallback';window.PinkOperatingCore?.health?.recordExternal?.('memory-cloud',api.health());window.dispatchEvent(new CustomEvent('pinkmemory:ready',{detail:{status:api.status,...api.health()}}));return api}
   try{
+    const {createClient}=await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm');
     const client=createClient(cfg.url,cfg.anonKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:'pink-memory-auth-v1'}});
     let {data:{session}}=await client.auth.getSession();
     if(!session){const result=await client.auth.signInAnonymously({options:{data:{app:'pink-lps-studio'}}});if(result.error)throw result.error;session=result.data.session}
