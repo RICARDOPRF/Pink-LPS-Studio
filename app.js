@@ -1,6 +1,9 @@
 const ELEVENLABS_AGENT_ID = 'agent_0001m2brk3bxes2vwzc26rpzqww4';
 const ELEVENLABS_BRANCH_ID = 'agtbrch_2101m2brk4sremv9s75zgjgt61q4';
 const ELEVENLABS_CLIENT_CDN = 'https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.25.0/+esm';
+const VOICE_PROVIDER_KEY = 'pink_voice_provider_v1';
+const VOICE_PROVIDER_FREE = 'device';
+const VOICE_PROVIDER_PREMIUM = 'elevenlabs';
 const $ = (sel) => document.querySelector(sel);
 const timeline = $('#timeline');
 const settingsDialog = $('#settingsDialog');
@@ -25,11 +28,21 @@ let elevenMessageCount = 0;
 let lastStartUserGesture = false;
 const seenMessages = new Set();
 
+function readVoiceProvider(){
+  try{
+    const saved=localStorage.getItem(VOICE_PROVIDER_KEY);
+    return saved===VOICE_PROVIDER_PREMIUM?VOICE_PROVIDER_PREMIUM:VOICE_PROVIDER_FREE;
+  }catch(_){return VOICE_PROVIDER_FREE}
+}
+let voiceProviderPreference=readVoiceProvider();
+const usingPremiumVoice=()=>voiceProviderPreference===VOICE_PROVIDER_PREMIUM;
+const currentVoiceLabel=()=>usingPremiumVoice()?'Roberta · ElevenLabs · Premium':'Voz do dispositivo · sem custo por minuto';
+
 const STATE = {
-  idle:{label:'Pronta',badge:'Pink online',voice:'ElevenLabs pronto · Roberta',node:null},
+  idle:{label:'Pronta',badge:'Pink online',voice:'Voz pronta',node:null},
   listening:{label:'Ouvindo você',badge:'Pink ouvindo',voice:'Ouvindo…',node:'listen'},
   thinking:{label:'Pensando',badge:'Pink pensando',voice:'Processando pedido…',node:'think'},
-  speaking:{label:'Falando',badge:'Pink falando',voice:'Roberta · ElevenLabs',node:'speak'},
+  speaking:{label:'Falando',badge:'Pink falando',voice:'Falando…',node:'speak'},
   executing:{label:'Executando',badge:'Pink executando',voice:'Executando ação…',node:'act'},
   error:{label:'Atenção',badge:'Verificar voz',voice:'Falha na conexão',node:null}
 };
@@ -60,14 +73,20 @@ function setPinkState(state,options={}){
   window.PinkEvolution?.recordState?.(state);
   $('#avatarStateText').textContent=meta.label;
   $('#systemBadge').textContent=meta.badge;
-  $('#voiceStatus').textContent=fallbackVoiceActive
-    ? (state==='listening'?'Contingência · ouvindo pelo dispositivo':state==='speaking'?'Contingência · voz do dispositivo':state==='thinking'?'Contingência · NVIDIA processando':'Contingência de voz ativa')
-    : meta.voice;
+  const freeMode=fallbackVoiceActive||!usingPremiumVoice();
+  $('#voiceStatus').textContent=freeMode
+    ? (state==='listening'?'Modo livre · ouvindo pelo dispositivo':state==='speaking'?'Modo livre · voz do dispositivo':state==='thinking'?'Modo livre · processando resposta':'Voz do dispositivo · sem custo por minuto')
+    : (state==='speaking'?'Roberta · ElevenLabs · Premium':meta.voice);
   setAgentNode(meta.node);
   clearTimeout(stateFallbackTimer);
   if(options.fallbackMs)stateFallbackTimer=setTimeout(()=>setPinkState(callActive?'listening':'idle'),options.fallbackMs);
 }
-function updateConnectionStatus(){if(!callActive){$('#voiceStatus').textContent='ElevenLabs pronto · Roberta';$('#systemBadge').textContent='Pink online'}}
+function updateConnectionStatus(){
+  if(!callActive){
+    $('#voiceStatus').textContent=currentVoiceLabel();
+    $('#systemBadge').textContent='Pink online';
+  }
+}
 function loadElevenLabsSdk(){
   if(elevenLabsSdkPromise)return elevenLabsSdkPromise;
   elevenLabsSdkPromise=import(ELEVENLABS_CLIENT_CDN).then(mod=>{
@@ -87,15 +106,15 @@ function showWakeGate(mode='tap'){
     btn.textContent='Tentar novamente';
   }else if(mode==='unsupported'){
     title.textContent='Abra a Pink em um navegador compatível';
-    text.textContent='Este navegador não disponibilizou o microfone para a página. Abra o site no Safari ou Chrome e tente novamente.';
+    text.textContent='Este navegador não disponibilizou reconhecimento de voz para a página. Abra a Pink no Chrome/Edge, ou use o Companion local quando disponível.';
     btn.textContent='Tentar novamente';
   }else if(mode==='agent-private'){
-    title.textContent='Agente ElevenLabs precisa estar público';
-    text.textContent='A Pink está ligada ao Agent ID correto, mas o ElevenLabs exigiu autenticação. No agente, deixe o acesso público para uso direto no navegador.';
+    title.textContent='ElevenLabs indisponível';
+    text.textContent='O modo Premium não conseguiu autenticar. Troque para o modo livre da Pink ou tente novamente.';
     btn.textContent='Tentar novamente';
   }else if(mode==='sdk-error'){
-    title.textContent='Não consegui carregar o ElevenLabs';
-    text.textContent='O SDK de voz não carregou. Verifique sua internet e tente novamente.';
+    title.textContent='ElevenLabs indisponível';
+    text.textContent='O SDK Premium não carregou. A Pink pode continuar usando a voz do dispositivo sem custo por minuto.';
     btn.textContent='Tentar novamente';
   }else if(mode==='error'){
     title.textContent='Não consegui iniciar a voz';
@@ -103,15 +122,18 @@ function showWakeGate(mode='tap'){
     btn.textContent='Tentar novamente';
   }else{
     title.textContent=isIOSDevice()?'Toque uma vez para acordar a Pink':'Falar com a Pink';
-    text.textContent=isIOSDevice()?'Esse toque libera o áudio e o microfone e inicia a Pink com a voz Roberta.':'Toque para liberar o microfone e iniciar a conversa com a voz Roberta.';
+    text.textContent=isIOSDevice()?'Esse toque libera o áudio e o microfone e inicia a Pink no modo livre.':'Toque para liberar o microfone. A voz padrão usa o próprio dispositivo, sem consumir minutos do ElevenLabs.';
     btn.textContent='Acordar a Pink';
   }
 }
 function hideWakeGate(){const gate=$('#wakeGate');if(gate)gate.hidden=true}
 function renderVoiceControls(){
   const mount=$('#voiceWidgetMount');if(!mount)return;
-  mount.innerHTML=`<div class="pink-call-control"><div class="call-status"><span class="call-ring"></span><div><small>ROBERTA · ELEVENLABS</small><strong id="callControlText">${callActive?'Conversa em andamento':startingCall?'Conectando à Pink…':'Pink pronta para falar'}</strong></div></div><button id="callControlBtn" class="primary-btn" ${startingCall?'disabled':''}>${callActive?'Encerrar conversa':startingCall?'Conectando…':'Falar com a Pink'}</button></div>`;
+  const providerTitle=usingPremiumVoice()?'ROBERTA · ELEVENLABS · PREMIUM':'PINK VOICE · MODO LIVRE';
+  const toggleLabel=usingPremiumVoice()?'Usar voz livre':'Usar Roberta Premium';
+  mount.innerHTML=`<div class="pink-call-control"><div class="call-status"><span class="call-ring"></span><div><small>${providerTitle}</small><strong id="callControlText">${callActive?'Conversa em andamento':startingCall?'Conectando à Pink…':'Pink pronta para falar'}</strong></div></div><button id="callControlBtn" class="primary-btn" ${startingCall?'disabled':''}>${callActive?'Encerrar conversa':startingCall?'Conectando…':'Falar com a Pink'}</button><button id="voiceProviderToggle" class="secondary-btn" type="button" ${callActive||startingCall?'disabled':''}>${toggleLabel}</button></div>`;
   $('#callControlBtn')?.addEventListener('click',()=>callActive?stopPinkCall():startPinkCall({userGesture:true}));
+  $('#voiceProviderToggle')?.addEventListener('click',()=>setVoiceProvider(usingPremiumVoice()?VOICE_PROVIDER_FREE:VOICE_PROVIDER_PREMIUM));
   updateConnectionStatus();
 }
 function handleElevenMessage(message){
@@ -229,7 +251,7 @@ async function fallbackRespond(text,{internal=false}={}){
   }catch(error){
     fallbackInternalPending=false;
     window.PinkEvolution?.recordIssue?.('fallback-voice-brain',error?.message||error);
-    await speakFallback('Estou te ouvindo, mas meu modo de contingência não conseguiu processar a resposta agora. Tenta novamente em alguns segundos.');
+    await speakFallback('Estou te ouvindo, mas não consegui processar a resposta agora. Tenta novamente em alguns segundos.');
   }
 }
 function fallbackConversationAdapter(){
@@ -245,7 +267,7 @@ async function handleFallbackTranscript(text=''){
   const serial=++fallbackTurnSerial;
   fallbackInternalPending=false;
   addMessage('user',spoken);setPinkState('thinking');
-  try{window.PinkCore?.handleUserSpeech?.(spoken)}catch(error){console.warn('Pink fallback router error',error)}
+  try{window.PinkCore?.handleUserSpeech?.(spoken)}catch(error){console.warn('Pink voice router error',error)}
   setTimeout(()=>{
     if(!fallbackVoiceActive||serial!==fallbackTurnSerial||fallbackInternalPending)return;
     fallbackRespond(spoken);
@@ -277,19 +299,19 @@ async function startFallbackVoice({userGesture=false,reason=''}={}){
     };
     recognition.onerror=(event)=>{
       const code=String(event?.error||'');
-      if(!['no-speech','aborted'].includes(code))window.PinkEvolution?.recordIssue?.('fallback-speech-error',code);
+      if(!['no-speech','aborted'].includes(code))window.PinkEvolution?.recordIssue?.('device-speech-error',code);
     };
     recognition.onend=()=>restartFallbackRecognition();
     fallbackVoiceActive=true;fallbackStarting=false;callActive=true;startingCall=false;
     hideWakeGate();setPinkState('listening');renderVoiceControls();
     window.PinkCore?.attachConversation?.(adapter);
-    window.PinkEvolution?.recordSession?.(`voice-fallback:${reason||'manual'}`);
+    window.PinkEvolution?.recordSession?.(`voice-device:${reason||'manual'}`);
     try{recognition.start()}catch(_){restartFallbackRecognition(120)}
     await speakFallback('Pink online. Estou te ouvindo.');
     return true;
   }catch(error){
     fallbackStarting=false;fallbackVoiceActive=false;callActive=false;conversation=null;
-    window.PinkEvolution?.recordIssue?.('fallback-start-error',error?.message||error);
+    window.PinkEvolution?.recordIssue?.('device-voice-start-error',error?.message||error);
     showWakeGate(voiceErrorMode(error));
     return false;
   }
@@ -301,10 +323,26 @@ async function activateVoiceFallback(reason='elevenlabs-unavailable'){
   return startFallbackVoice({userGesture:false,reason});
 }
 
+async function setVoiceProvider(provider){
+  const next=provider===VOICE_PROVIDER_PREMIUM?VOICE_PROVIDER_PREMIUM:VOICE_PROVIDER_FREE;
+  if(callActive||startingCall)await stopPinkCall();
+  voiceProviderPreference=next;
+  try{localStorage.setItem(VOICE_PROVIDER_KEY,next)}catch(_){ }
+  window.PinkEvolution?.recordSession?.(`voice-provider:${next}`);
+  setPinkState('idle');renderVoiceControls();
+  return next;
+}
+
 async function startPinkCall({userGesture=false,auto=false}={}){
   if(callActive||startingCall)return true;
   lastStartUserGesture=userGesture;
   startingCall=true;setPinkState('thinking');renderVoiceControls();
+
+  if(!usingPremiumVoice()){
+    startingCall=false;
+    return startFallbackVoice({userGesture,reason:'zero-cost-default'});
+  }
+
   try{
     if(userGesture)await unlockVoiceFromUserGesture();
     const {Conversation}=await loadElevenLabsSdk();
@@ -340,15 +378,13 @@ async function startPinkCall({userGesture=false,auto=false}={}){
     window.PinkCore?.attachConversation?.(conversation);
     return true;
   }catch(error){
-    console.warn('Pink voice start failed',error);
+    console.warn('Pink premium voice start failed',error);
     window.PinkEvolution?.recordIssue?.('elevenlabs-start-error',error?.message||error);
     window.PinkCore?.detachConversation?.();
     startingCall=false;callActive=false;conversation=null;setPinkState('idle');renderVoiceControls();
     const mode=voiceErrorMode(error);
-    if(isElevenQuotaError(error)||(!auto&&mode!=='mic-denied'&&mode!=='unsupported')){
-      const recovered=await startFallbackVoice({userGesture:false,reason:isElevenQuotaError(error)?'elevenlabs-quota':'elevenlabs-start-error'});
-      if(recovered)return true;
-    }
+    const recovered=await startFallbackVoice({userGesture:false,reason:isElevenQuotaError(error)?'elevenlabs-quota':'elevenlabs-start-error'});
+    if(recovered)return true;
     showWakeGate(auto?'tap':mode);
     return false;
   }
@@ -363,7 +399,7 @@ async function stopPinkCall(){
 function scheduleAutoGreeting(){
   if(autoStartAttempted)return;
   autoStartAttempted=true;
-  loadElevenLabsSdk().catch(error=>console.warn('ElevenLabs preload failed',error));
+  if(usingPremiumVoice())loadElevenLabsSdk().catch(error=>console.warn('ElevenLabs preload failed',error));
   if(isIOSDevice()){showWakeGate('tap');return}
   setTimeout(()=>startPinkCall({auto:true}),650);
 }
@@ -374,7 +410,7 @@ $('#clearBtn')?.addEventListener('click',()=>{timeline.innerHTML='';seenMessages
 function demoSequence(text){
   addMessage('user',text);setPinkState('listening');
   setTimeout(()=>setPinkState('thinking'),900);
-  setTimeout(()=>{setPinkState('speaking');addMessage('assistant','Entendi. Estou no modo ao vivo: ouvindo, pensando e respondendo com a voz Roberta pelo ElevenLabs.')},1900);
+  setTimeout(()=>{setPinkState('speaking');addMessage('assistant',usingPremiumVoice()?'Entendi. Estou respondendo com a voz Roberta no modo Premium.':'Entendi. Estou no modo livre, usando a voz do dispositivo sem consumir minutos do ElevenLabs.')},1900);
   setTimeout(()=>setPinkState(callActive?'listening':'idle'),5200);
 }
 $('#demoBtn')?.addEventListener('click',()=>demoSequence('Pink, me mostra como você reage enquanto eu falo.'));
@@ -394,7 +430,10 @@ window.PinkVoice={
   start:()=>startPinkCall({userGesture:true}),
   stop:stopPinkCall,
   startFallback:()=>startFallbackVoice({userGesture:true,reason:'manual'}),
+  setProvider:setVoiceProvider,
   getConversation:()=>conversation,
+  get provider(){return voiceProviderPreference},
+  get variableVoiceCost(){return usingPremiumVoice()?'provider-metered':'0-per-minute'},
   get mode(){return fallbackVoiceActive?'fallback':callActive?'elevenlabs':'idle'}
 };
 
