@@ -1,11 +1,12 @@
 (() => {
   // Phase 0 bootstrap is additive: existing Pink behavior does not depend on it during startup.
   // Future phases can wait for `pinkfoundation:ready` before using approval/ledger primitives.
-  function loadFoundationScript(src, marker) {
+  function loadFoundationScript(src, marker, module=false) {
     if (document.querySelector(`script[data-pink-foundation="${marker}"]`)) return Promise.resolve();
     return new Promise((resolve, reject) => {
       const script = document.createElement('script');
       script.src = new URL(src, document.baseURI).href;
+      if(module) script.type='module';
       script.dataset.pinkFoundation = marker;
       script.onload = () => resolve();
       script.onerror = () => reject(new Error(`Failed to load ${src}`));
@@ -19,6 +20,14 @@
       const health = window.PinkFoundation?.health?.() || { ok: false };
       window.dispatchEvent(new CustomEvent('pinkfoundation:ready', { detail: health }));
       if (!health.ok) console.warn('Pink Foundation configuration is degraded', health);
+      try {
+        if (!window.PinkMemoryCore) await loadFoundationScript('memory/pink-memory-core.js', 'memory-core');
+        await loadFoundationScript('memory/pink-memory-supabase.mjs', 'memory-cloud', true);
+        await loadFoundationScript('memory/pink-memory-bridge.js', 'memory-bridge');
+      } catch (memoryError) {
+        console.warn('Pink cloud memory unavailable; local memory fallback preserved.', memoryError);
+        window.PinkEvolution?.recordIssue?.('memory-bootstrap', memoryError?.message || memoryError);
+      }
     } catch (error) {
       console.warn('Pink Foundation bootstrap unavailable; legacy runtime preserved.', error);
       window.dispatchEvent(new CustomEvent('pinkfoundation:error', { detail: { message: String(error?.message || error) } }));
