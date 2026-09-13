@@ -36,6 +36,7 @@ jobs:
           node --check visual/pink-avatar-registry.js
           node --check visual/pink-avatar-model-adapter.mjs
           node --check visual/pink-voice-reactive.js
+          node --check visual/pink-holographic-ui.js
           node --check visual/pink-3d-presence.js
       - name: Presence lifecycle
         run: node tests/presence-lifecycle.cjs
@@ -47,3 +48,5 @@ jobs:
         run: node tests/avatar-model-adapter.cjs
       - name: Voice reactive lip sync
         run: node tests/voice-reactive.cjs
+      - name: Holographic UI modes
+        run: node tests/holographic-ui.cjs
