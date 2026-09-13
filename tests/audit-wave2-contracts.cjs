@@ -1,0 +1,10 @@
+const fs=require('fs');
+const assert=require('assert');
+const memory=fs.readFileSync('memory/pink-memory-supabase.mjs','utf8');
+const obs=fs.readFileSync('observability/pink-observability.js','utf8');
+assert(memory.includes('supabase_memory_active_tenant_required'),'Memory must refuse ambiguous multi-tenant selection');
+assert(memory.includes('supabase_memory_active_tenant_not_authorized'),'Memory must reject unauthorized selected tenant');
+assert(!memory.includes(".eq('user_id',session.user.id).limit(1)"),'Memory must not silently pick first membership');
+assert(obs.includes("status:'loaded_unverified'"),'Observability must distinguish loaded from verified healthy');
+assert(obs.includes("unverified.length?'unverified':'healthy'"),'Synthetic health must surface unverified state');
+console.log('Audit wave 2 contracts: OK');
