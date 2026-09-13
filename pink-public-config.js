@@ -30,7 +30,7 @@
       holographicUI: true,
       nvidiaFallback: true,
       browserVoiceFallback: true,
-      cloudMemory: true,
+      cloudMemory: environment === 'production',
       multiAgent: false,
       companion: false,
       autonomousEvolution: false
