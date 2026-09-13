@@ -1,0 +1,42 @@
+{
+  "schemaVersion": 1,
+  "runtime": [
+    {
+      "name": "three",
+      "version": "0.180.0",
+      "source": "jsdelivr",
+      "license": "MIT",
+      "purpose": "Pink WebGL presence and GLB/GLTF rendering"
+    },
+    {
+      "name": "@pixiv/three-vrm",
+      "version": "3.5.5",
+      "source": "jsdelivr",
+      "license": "MIT",
+      "purpose": "VRM avatar loading and humanoid/expression runtime"
+    },
+    {
+      "name": "@elevenlabs/client",
+      "version": "1.25.0",
+      "source": "jsdelivr",
+      "license": "MIT",
+      "purpose": "ElevenLabs conversational voice client"
+    },
+    {
+      "name": "Google Fonts / Inter",
+      "version": "remote stylesheet",
+      "source": "fonts.googleapis.com",
+      "license": "OFL-1.1",
+      "purpose": "UI typography"
+    }
+  ],
+  "ci": [
+    { "name": "actions/checkout", "version": "v4", "source": "GitHub Actions", "purpose": "repository checkout" },
+    { "name": "actions/setup-node", "version": "v4", "source": "GitHub Actions", "purpose": "Node 22 setup" }
+  ],
+  "policy": {
+    "runtimePackagesMustBePinned": true,
+    "newDependencyRequiresLicenseRecord": true,
+    "unknownLicenseBlocksProduction": true
+  }
+}
