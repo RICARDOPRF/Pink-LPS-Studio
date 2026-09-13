@@ -1,7 +1,11 @@
+# Pink Local Voice optional runtime. Install in an isolated virtual environment.
 faster-whisper>=1.1,<2
-numpy>=1.26,<3
-sounddevice>=0.5,<1
 kokoro>=0.9,<1
+sounddevice>=0.5,<1
+numpy>=1.26,<3
 soundfile>=0.12,<1
+edge-tts>=7,<8
+miniaudio>=1.61,<2
 openwakeword>=0.6,<1
-# Optional local brain: install Ollama separately; no Python SDK required.
+# Ollama is installed separately; no Python SDK is required.
+# PyTorch is intentionally not forced: CPU/int8 works without a CUDA-specific build.
