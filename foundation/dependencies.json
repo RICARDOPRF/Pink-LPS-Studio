@@ -31,11 +31,13 @@
     }
   ],
   "ci": [
-    { "name": "actions/checkout", "version": "v4", "source": "GitHub Actions", "purpose": "repository checkout" },
-    { "name": "actions/setup-node", "version": "v4", "source": "GitHub Actions", "purpose": "Node 22 setup" }
+    { "name": "actions/checkout", "version": "v4", "source": "GitHub Actions", "license": "MIT", "purpose": "repository checkout" },
+    { "name": "actions/setup-node", "version": "v4", "source": "GitHub Actions", "license": "MIT", "purpose": "Node 22 setup" },
+    { "name": "playwright", "version": "1.63.0", "source": "npm", "license": "Apache-2.0", "purpose": "desktop/mobile Chromium smoke gate" }
   ],
   "policy": {
     "runtimePackagesMustBePinned": true,
+    "ciPackagesMustBePinned": true,
     "newDependencyRequiresLicenseRecord": true,
     "unknownLicenseBlocksProduction": true
   }
