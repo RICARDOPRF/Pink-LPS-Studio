@@ -10,14 +10,14 @@
       : 'preview';
 
   window.PinkPublicConfig = Object.freeze({
-    schemaVersion: 1,
-    appVersion: '10.4.0',
+    schemaVersion: 2,
+    appVersion: '11.0.0',
     environment,
     supabase: Object.freeze({
       url: 'https://membyrbgynicllzrhjsl.supabase.co',
       // Publishable browser credential (role=anon). RLS remains the security boundary.
       anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbWJ5cmJneW5pY2xsenJoanNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzE3MTAsImV4cCI6MjA5NzY0NzcxMH0.5_5fKYLYHlGCvggoF7t9QtwkvVaRX0LKkDtw--brJY0',
-      functions: Object.freeze({ nvidia: 'pink-nvidia' })
+      functions: Object.freeze({ nvidia: 'pink-nvidia', health: 'pink-health' })
     }),
     voice: Object.freeze({
       provider: 'elevenlabs',
@@ -31,9 +31,13 @@
       nvidiaFallback: true,
       browserVoiceFallback: true,
       cloudMemory: environment === 'production',
-      multiAgent: false,
-      companion: false,
-      autonomousEvolution: false
+      multiAgent: true,
+      pinkStudio: true,
+      toolLayer: true,
+      companion: true,
+      autonomousEvolution: true,
+      observability: true,
+      enterprise: true
     })
   });
 })();
