@@ -11,25 +11,39 @@
 
   window.PinkPublicConfig = Object.freeze({
     schemaVersion: 2,
-    appVersion: '11.0.0',
+    appVersion: '12.0.0',
     environment,
     supabase: Object.freeze({
       url: 'https://membyrbgynicllzrhjsl.supabase.co',
-      // Publishable browser credential (role=anon). RLS remains the security boundary.
       anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbWJ5cmJneW5pY2xsenJoanNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzE3MTAsImV4cCI6MjA5NzY0NzcxMH0.5_5fKYLYHlGCvggoF7t9QtwkvVaRX0LKkDtw--brJY0',
-      functions: Object.freeze({ nvidia: 'pink-nvidia', health: 'pink-health' })
+      functions: Object.freeze({
+        nvidia: 'pink-nvidia',
+        geminiToken: 'pink-gemini-token',
+        health: 'pink-health'
+      })
     }),
     voice: Object.freeze({
-      provider: 'elevenlabs',
-      agentId: 'agent_0001m2brk3bxes2vwzc26rpzqww4',
-      branchId: 'agtbrch_2101m2brk4sremv9s75zgjgt61q4',
-      clientCdn: 'https://cdn.jsdelivr.net/npm/@elevenlabs/client@1.25.0/+esm'
+      provider: 'gemini-live',
+      model: 'models/gemini-3.1-flash-live-preview',
+      voiceName: 'Aoede',
+      nvidiaFallback: true
+    }),
+    nvidia: Object.freeze({
+      primaryReasoning: 'nvidia/nemotron-3.5-30b-a3b',
+      capabilities: Object.freeze({
+        rag: 'rag-blueprint',
+        research: 'aiq-research',
+        optimization: 'cuopt',
+        dataframeGpu: 'cudf',
+        visionPipeline: 'deepstream'
+      })
     }),
     features: Object.freeze({
       pink3d: true,
       holographicUI: true,
+      geminiLive: true,
       nvidiaFallback: true,
-      browserVoiceFallback: true,
+      browserVoiceFallback: false,
       cloudMemory: environment === 'production',
       multiAgent: true,
       pinkStudio: true,
@@ -41,7 +55,6 @@
     })
   });
 
-  // Configuration is also read by non-DOM validation tools.
   if (typeof document === 'undefined') return;
   const phaseModules = Object.freeze([
     ['observability/pink-observability.js','phase10-observability'],
@@ -53,7 +66,7 @@
     ['enterprise/pink-enterprise.js','phase11-enterprise'],
     ['platform/pink-platform.js','phase5-11-platform']
   ]);
-  async function loadPhaseModule(src, marker){
+  async function loadPhaseModule(src,marker){
     if(document.querySelector(`script[data-pink-platform="${marker}"]`)) return;
     await new Promise((resolve,reject)=>{
       const script=document.createElement('script');
@@ -67,9 +80,9 @@
   async function bootExtendedPlatform(){
     try{
       for(const [src,marker] of phaseModules) await loadPhaseModule(src,marker);
-      window.dispatchEvent(new CustomEvent('pinkplatform:modules-loaded',{detail:{version:'11.0.0'}}));
+      window.dispatchEvent(new CustomEvent('pinkplatform:modules-loaded',{detail:{version:'12.0.0'}}));
     }catch(error){
-      console.warn('Pink extended platform degraded; legacy runtime preserved.',error);
+      console.warn('Pink extended platform degraded; stable runtime preserved.',error);
       window.PinkEvolution?.recordIssue?.('platform-5-11-bootstrap',error?.message||error);
     }
   }
