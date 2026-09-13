@@ -6,6 +6,7 @@ const path = require('node:path');
 const ROOT = process.cwd();
 const EXTENSIONS = new Set(['.js','.mjs','.cjs','.json','.html','.css','.md','.sql','.yml','.yaml','.webmanifest','.txt']);
 const IGNORE_DIRS = new Set(['.git','node_modules','dist','build','coverage']);
+const FIXTURE_MARKER = 'pink-secret-scan-fixture';
 const findings = [];
 
 const rules = [
@@ -29,9 +30,7 @@ function decodeJwtPayload(token) {
 function inspectJwt(file, lineNumber, token) {
   const payload = decodeJwtPayload(token);
   if (!payload) return;
-  if (payload.role === 'service_role') {
-    findings.push({ file, line: lineNumber, rule: 'supabase-service-role-jwt' });
-  }
+  if (payload.role === 'service_role') findings.push({ file, line: lineNumber, rule: 'supabase-service-role-jwt' });
 }
 
 function inspectFile(filePath) {
@@ -39,13 +38,14 @@ function inspectFile(filePath) {
   const text = fs.readFileSync(filePath, 'utf8');
   const lines = text.split(/\r?\n/);
   lines.forEach((line, index) => {
+    // Only an explicitly marked synthetic fixture line may bypass matching.
+    // Tests remain scanned normally, so an accidental real secret elsewhere still fails CI.
+    if (line.includes(FIXTURE_MARKER)) return;
     for (const [name, regex] of rules) {
       regex.lastIndex = 0;
       if (regex.test(line)) findings.push({ file: rel, line: index + 1, rule: name });
     }
-    for (const token of line.match(/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g) || []) {
-      inspectJwt(rel, index + 1, token);
-    }
+    for (const token of line.match(/eyJ[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}\.[A-Za-z0-9_-]{8,}/g) || []) inspectJwt(rel, index + 1, token);
     if (/\b(?:PASSWORD|PRIVATE_KEY|SERVICE_ROLE_KEY|API_SECRET|CLIENT_SECRET)\s*[:=]\s*['"][^'"]{8,}['"]/i.test(line)) {
       findings.push({ file: rel, line: index + 1, rule: 'sensitive-assignment' });
     }
