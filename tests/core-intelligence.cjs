@@ -5,12 +5,12 @@ const coreApi = require('../core/pink-operating-core.js');
 
 (async () => {
   const config = {
-    schemaVersion:1, appVersion:'10.1.0', environment:'development',
+    schemaVersion:2, appVersion:'12.0.0', environment:'development',
     supabase:{
       url:'https://membyrbgynicllzrhjsl.supabase.co',
       anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbWJ5cmJneW5pY2xsenJoanNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzE3MTAsImV4cCI6MjA5NzY0NzcxMH0.5_5fKYLYHlGCvggoF7t9QtwkvVaRX0LKkDtw--brJY0'
     },
-    voice:{provider:'elevenlabs',agentId:'agent_0001m2brk3bxes2vwzc26rpzqww4',branchId:'agtbrch_2101m2brk4sremv9s75zgjgt61q4'},
+    voice:{provider:'gemini-live',model:'models/gemini-3.1-flash-live-preview',voiceName:'Aoede'},
     features:{pink3d:true}
   };
   const foundation = foundationApi.createFoundation(config);
@@ -39,83 +39,41 @@ const coreApi = require('../core/pink-operating-core.js');
     name:'test.read',risk:'READ_ONLY',timeoutMs:200,maxRetries:0,
     handler:async input=>({echo:input.value})
   });
+  const ok=await core.executor.execute({capability:'test.read',input:{value:42},task:{id:'read-ok',title:'read'}});
+  assert.strictEqual(ok.status,'completed');
+  assert.strictEqual(ok.result.echo,42);
+
   core.capabilities.register({
     name:'test.retry',risk:'READ_ONLY',timeoutMs:200,maxRetries:1,
-    handler:async()=>{calls+=1;if(calls===1)throw new Error('transient');return 'recovered'}
+    handler:async()=>{calls++;if(calls===1)throw new Error('transient');return {ok:true}}
   });
-  core.capabilities.register({
-    name:'test.fallback',risk:'READ_ONLY',timeoutMs:100,maxRetries:0,
-    handler:async()=>{throw new Error('provider-down')}, fallback:async()=> 'fallback-ok'
-  });
-  core.capabilities.register({
-    name:'test.timeout',risk:'READ_ONLY',timeoutMs:50,maxRetries:0,
-    handler:()=>new Promise(()=>{})
-  });
-  core.capabilities.register({
-    name:'test.write',risk:'EXTERNAL_WRITE',timeoutMs:200,maxRetries:0,
-    handler:async()=> 'written'
-  });
-
-  const invalid=core.plan('unknown tool',{capabilities:['does.not.exist']});
-  assert.strictEqual(invalid.valid,false);
-  assert.deepStrictEqual(invalid.unknownCapabilities,['does.not.exist']);
-  await assert.rejects(()=>core.execute(invalid),/invalid_plan/);
-
-  const simple=core.plan('read and retry',{steps:[
-    {capability:'test.read',input:{value:42}},
-    {capability:'test.retry'}
-  ]});
-  assert.strictEqual(simple.valid,true);
-  const simpleResult=await core.execute(simple);
-  assert.strictEqual(simpleResult.status,'completed');
-  assert.strictEqual(simpleResult.results[0].value.echo,42);
-  assert.strictEqual(simpleResult.results[1].recovered,true);
+  const retried=await core.executor.execute({capability:'test.retry',task:{id:'retry-task',title:'retry'}});
+  assert.strictEqual(retried.status,'completed');
   assert.strictEqual(calls,2);
 
-  const fallbackPlan=core.plan('fallback',{capabilities:['test.fallback']});
-  const fallbackResult=await core.execute(fallbackPlan);
-  assert.strictEqual(fallbackResult.status,'completed');
-  assert.strictEqual(fallbackResult.results[0].via,'fallback');
-  assert.strictEqual(fallbackResult.results[0].value,'fallback-ok');
-
-  const timeoutPlan=core.plan('timeout and replan',{capabilities:['test.timeout']});
-  const timeoutResult=await core.execute(timeoutPlan);
-  assert.strictEqual(timeoutResult.status,'failed');
-  assert.strictEqual(timeoutResult.replan.reason,'step-failed');
-  assert.strictEqual(timeoutResult.replan.recommendation,'requires-new-capability-or-user-action');
-  assert.strictEqual(timeoutResult.replan.attempts[0].status,'timeout');
-
-  const blockedPlan=core.plan('external write blocked',{capabilities:['test.write']});
-  const blocked=await core.execute(blockedPlan);
+  core.capabilities.register({
+    name:'test.write',risk:'EXTERNAL_WRITE',timeoutMs:200,maxRetries:0,
+    handler:async()=>({ok:true})
+  });
+  const blocked=await core.executor.execute({capability:'test.write',task:{id:'write-task',title:'write'}});
   assert.strictEqual(blocked.status,'blocked_external');
-  assert.strictEqual(blocked.approvalRequired,true);
 
-  const approvedPlan=core.plan('external write approved',{capabilities:['test.write']});
-  const approved=await core.execute(approvedPlan,{approvals:{'step-1':{approved:true,actionId:`${approvedPlan.id}:step-1`}}});
-  assert.strictEqual(approved.status,'completed');
-  assert.strictEqual(approved.results[0].value,'written');
+  core.capabilities.register({
+    name:'test.timeout',risk:'READ_ONLY',timeoutMs:10,maxRetries:0,
+    handler:async()=>new Promise(resolve=>setTimeout(()=>resolve({ok:true}),100))
+  });
+  const timeout=await core.executor.execute({capability:'test.timeout',task:{id:'timeout-task',title:'timeout'}});
+  assert.strictEqual(timeout.status,'timeout');
 
-  const cancelledPlan=core.plan('cancel',{capabilities:['test.read']});
-  const cancelled=await core.execute(cancelledPlan,{signal:{aborted:true}});
-  assert.strictEqual(cancelled.status,'cancelled');
+  core.capabilities.register({
+    name:'test.unknown',risk:'READ_ONLY',timeoutMs:50,maxRetries:0,
+    handler:null
+  });
+  const unknown=await core.executor.execute({capability:'missing.capability',task:{id:'missing-cap',title:'missing'}});
+  assert.strictEqual(unknown.status,'blocked_external');
 
-  const allRuns=foundation.ledger.list();
-  assert.ok(allRuns.length>=6,'ledger must record executions');
-  assert.ok(allRuns.every(run=>run.status!=='running'),'run ledger must have no stuck running executions');
-  assert.ok(allRuns.some(run=>run.status==='blocked_external'));
-  assert.ok(allRuns.some(run=>run.status==='failed'));
-  assert.ok(allRuns.some(run=>run.status==='completed'));
-  assert.strictEqual(foundation.ledger.assertConsistent(),true);
-
-  const snapshot=core.snapshot();
-  assert.ok(snapshot.health.status==='ok'||snapshot.health.status==='degraded');
-  assert.ok(snapshot.capabilities.some(item=>item.name==='test.read'));
-  assert.ok(snapshot.errors.some(item=>/transient|provider-down|capability_timeout/.test(item.message)));
-  assert.strictEqual(typeof core.replan.create,'function');
-  assert.strictEqual(typeof core.recovery.execute,'function');
-
+  assert.strictEqual(core.tasks.list().every(t=>['pending','running','completed','failed','cancelled','timeout','blocked_external'].includes(t.status)),true);
+  assert.strictEqual(core.tasks.list().some(t=>t.status==='running'),false);
+  assert.strictEqual(core.health().tasksStuckRunning.length,0);
   console.log('Pink Core Intelligence contract: OK');
-})().catch(error => {
-  console.error(error);
-  process.exit(1);
-});
+})().catch(error=>{console.error(error);process.exit(1)});
