@@ -1,7 +1,7 @@
 // Pink Phase 3 — real WebGL/Three.js presence layer
 // Visual-only: no microphone, memory, auth, tool or production behavior is changed.
 (() => {
-  const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+  const THREE_URL = 'https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js';
   const stage = document.querySelector('#pinkStage');
   if (!stage || window.Pink3DPresence) return;
 
@@ -247,4 +247,3 @@
   };
   boot();
 })();
-
