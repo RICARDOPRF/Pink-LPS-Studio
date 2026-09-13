@@ -11,7 +11,7 @@
 
   window.PinkPublicConfig = Object.freeze({
     schemaVersion: 1,
-    appVersion: '10.1.0',
+    appVersion: '10.4.0',
     environment,
     supabase: Object.freeze({
       url: 'https://membyrbgynicllzrhjsl.supabase.co',
@@ -30,7 +30,7 @@
       holographicUI: true,
       nvidiaFallback: true,
       browserVoiceFallback: true,
-      cloudMemory: false,
+      cloudMemory: environment === 'production',
       multiAgent: false,
       companion: false,
       autonomousEvolution: false
