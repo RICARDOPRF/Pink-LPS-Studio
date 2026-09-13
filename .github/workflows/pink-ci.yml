@@ -38,6 +38,7 @@ jobs:
           node --check memory/pink-memory-core.js
           node --check memory/pink-memory-supabase.mjs
           node --check memory/pink-memory-bridge.js
+          node --check observability/pink-observability.js
           node --check app.js
           node --check pink-core.js
           node --check pink-evolution.js
@@ -59,6 +60,8 @@ jobs:
         run: node tests/core-intelligence.cjs
       - name: Independent audit safety boundaries
         run: node tests/audit-safety-boundaries.cjs
+      - name: Audit wave 2 contracts
+        run: node tests/audit-wave2-contracts.cjs
       - name: Voice OS contracts
         run: node tests/voice-os.cjs
       - name: Memory and People Graph contracts
