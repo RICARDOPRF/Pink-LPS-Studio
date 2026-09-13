@@ -37,9 +37,12 @@ jobs:
         run: |
           node --check pink-public-config.js
           node --check foundation/pink-foundation.js
+          node --check foundation/pink-confirm-gate.js
+          node --check foundation/pink-undo-stack.js
           node --check core/pink-operating-core.js
           node --check voice/pink-voice-os.js
           node --check voice/pink-local-voice.js
+          node --check voice/pink-gemini-live.js
           node --check memory/pink-memory-core.js
           node --check memory/pink-memory-supabase.mjs
           node --check memory/pink-memory-bridge.js
@@ -64,6 +67,8 @@ jobs:
           python companion/local_voice_service.py --self-test
       - name: Foundation safety contracts
         run: node tests/foundation-safety.cjs
+      - name: Human confirmation and undo contracts
+        run: node tests/confirm-undo.cjs
       - name: Core intelligence contracts
         run: node tests/core-intelligence.cjs
       - name: Independent audit safety boundaries
