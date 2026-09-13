@@ -46,6 +46,8 @@ jobs:
         run: node tests/avatar-registry.cjs
       - name: Avatar model adapter
         run: node tests/avatar-model-adapter.cjs
+      - name: Avatar validation gate
+        run: node tests/avatar-validation-gate.cjs
       - name: Voice reactive lip sync
         run: node tests/voice-reactive.cjs
       - name: Holographic UI modes
