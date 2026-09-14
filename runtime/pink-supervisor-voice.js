@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const $=s=>document.querySelector(s);
-  let recognition=null,active=false,speaking=false,starting=false;
+  let recognition=null,active=false,speaking=false,starting=false,geminiVoiceLoader=null;
   const history=[];
 
   function state(name,label){
@@ -37,24 +37,17 @@
     if(!window.PinkOpenAI?.ask)throw new Error('chatgpt_bridge_unavailable');
     const memory=await memoryContext(prompt);
     const activeProject=window.PinkOperatingCore?.snapshot?.().awareness?.activeProject||window.PinkCore?.activeProject||null;
-    const input=[
-      activeProject?`Projeto ativo: ${activeProject}`:'',
-      memory?`Memórias relevantes da Pink:\n${memory}`:'',
-      String(prompt||'')
-    ].filter(Boolean).join('\n\n');
+    const input=[activeProject?`Projeto ativo: ${activeProject}`:'',memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
     const result=await window.PinkOpenAI.ask(input,{useMemory:false,reasoningEffort:'medium',maxOutputTokens:1800});
-    const reply=String(result?.reply||'').trim();
-    if(!reply)throw new Error('chatgpt_empty_output');
+    const reply=String(result?.reply||'').trim();if(!reply)throw new Error('chatgpt_empty_output');
     return {reply,provider:'chatgpt',model:result.model||null,usage:result.usage||null};
   }
 
   async function askFallback(prompt,primaryError){
-    const cfg=window.PinkPublicConfig?.supabase||{};
-    if(!cfg.url||!cfg.anonKey)throw primaryError;
+    const cfg=window.PinkPublicConfig?.supabase||{};if(!cfg.url||!cfg.anonKey)throw primaryError;
     const endpoint=`${String(cfg.url).replace(/\/$/,'')}/functions/v1/${cfg.functions?.brain||'pink-brain'}`;
     const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input:String(prompt||''),skipProviders:['openai'],reasoningEffort:'medium',thinkingLevel:'high',maxOutputTokens:1800})});
-    const payload=await response.json().catch(()=>({}));
-    if(!response.ok||!payload?.ok)throw primaryError;
+    const payload=await response.json().catch(()=>({}));if(!response.ok||!payload?.ok)throw primaryError;
     const reply=String(payload.reply||'').trim();if(!reply)throw primaryError;
     return {reply,provider:payload.provider||'fallback',model:payload.model||null,usage:payload.usage||null};
   }
@@ -64,6 +57,22 @@
       window.PinkEvolution?.recordIssue?.('chatgpt-supervisor',error?.message||error);
       return askFallback(prompt,error);
     }
+  }
+
+  function ensureGeminiVoice(){
+    if(window.PinkGeminiVoice?.speak)return Promise.resolve(window.PinkGeminiVoice);
+    if(geminiVoiceLoader)return geminiVoiceLoader;
+    geminiVoiceLoader=new Promise((resolve,reject)=>{
+      const existing=document.querySelector('script[data-pink-gemini-voice]');
+      if(existing){
+        const timer=setInterval(()=>{if(window.PinkGeminiVoice?.speak){clearInterval(timer);resolve(window.PinkGeminiVoice)}},25);
+        setTimeout(()=>{clearInterval(timer);if(window.PinkGeminiVoice?.speak)resolve(window.PinkGeminiVoice);else reject(new Error('gemini_voice_bridge_timeout'))},4000);return;
+      }
+      const script=document.createElement('script');script.src=new URL('voice/pink-gemini-tts.js?v=1.0.0',document.baseURI).href;script.dataset.pinkGeminiVoice='1';
+      script.onload=()=>window.PinkGeminiVoice?.speak?resolve(window.PinkGeminiVoice):reject(new Error('gemini_voice_bridge_missing'));
+      script.onerror=()=>reject(new Error('gemini_voice_bridge_load_failed'));document.head.appendChild(script);
+    }).catch(error=>{geminiVoiceLoader=null;throw error});
+    return geminiVoiceLoader;
   }
 
   function browserSpeak(text){
@@ -79,14 +88,12 @@
     const value=String(text||'').trim();if(!value)return;
     speaking=true;try{recognition?.stop?.()}catch(_){}window.speechSynthesis?.cancel?.();state('speaking');
     try{
-      if(!window.PinkGeminiVoice?.speak)throw new Error('gemini_voice_bridge_unavailable');
-      await window.PinkGeminiVoice.speak(value,{voiceName:window.PinkPublicConfig?.voice?.voiceName||'Aoede'});
+      const geminiVoice=await ensureGeminiVoice();
+      await geminiVoice.speak(value,{voiceName:window.PinkPublicConfig?.voice?.voiceName||'Aoede'});
     }catch(error){
-      window.PinkEvolution?.recordIssue?.('gemini-voice',error?.message||error);
-      await browserSpeak(value);
+      window.PinkEvolution?.recordIssue?.('gemini-voice',error?.message||error);await browserSpeak(value);
     }finally{
-      speaking=false;
-      if(active){state('listening');setTimeout(()=>{try{recognition?.start?.()}catch(_){}},250)}
+      speaking=false;if(active){state('listening');setTimeout(()=>{try{recognition?.start?.()}catch(_){}},250)}
     }
   }
 
@@ -105,8 +112,7 @@
       add('assistant',reply);await speak(reply);
     }catch(error){
       console.error('Pink supervisor runtime',error);window.PinkEvolution?.recordIssue?.('supervisor-runtime',error?.message||error);state('error');
-      const detail=String(error?.message||error||'').slice(0,180);
-      const msg=`Eu ouvi sua pergunta, mas o ChatGPT Supervisor não respondeu agora${detail?` (${detail})`:''}.`;
+      const detail=String(error?.message||error||'').slice(0,180);const msg=`Eu ouvi sua pergunta, mas o ChatGPT Supervisor não respondeu agora${detail?` (${detail})`:''}.`;
       add('assistant',msg);await speak(msg);if(active)state('listening');
     }
   }
