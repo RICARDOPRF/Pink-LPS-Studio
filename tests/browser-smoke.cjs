@@ -14,6 +14,7 @@ async function smoke(browser,name,contextOptions){
  await page.waitForFunction(()=>Boolean(window.PinkSupervisorVoice&&window.PinkOpenAI&&window.PinkAIGateway&&window.PinkIntentRouter),null,{timeout:12000});
  await page.waitForFunction(()=>Boolean(window.PinkCommandCenter&&document.getElementById('pinkCommandDock')),null,{timeout:12000});
  await page.waitForFunction(()=>Boolean(window.PinkOrbConsole?.snapshot?.().ready),null,{timeout:15000});
+ await page.waitForFunction(()=>Boolean(window.PinkAutonomy&&window.PinkAutonomyModalHotfix&&document.getElementById('pinkAutonomyOverlay')&&document.getElementById('pinkAutonomyBtn')),null,{timeout:15000});
  const title=await page.title();assert.match(title,/Pink LPS Studio/i,`${name}: title mismatch`);
  const stage=page.locator('#pinkStage');assert.strictEqual(await stage.count(),1,`${name}: Pink stage missing`);assert.ok(await stage.isVisible(),`${name}: Pink stage not visible`);
  const orb=page.locator('#pinkOrbCanvas');assert.strictEqual(await orb.count(),1,`${name}: 3D orb canvas missing`);assert.ok(await orb.isVisible(),`${name}: 3D orb canvas not visible`);
@@ -25,6 +26,16 @@ async function smoke(browser,name,contextOptions){
  const commandDock=page.locator('#pinkCommandDock');assert.strictEqual(await commandDock.count(),1,`${name}: unified command dock missing`);assert.ok(await commandDock.isVisible(),`${name}: unified command dock not visible`);
  const commandButtons=page.locator('#pinkCommandDock [data-pcc]');assert.ok(await commandButtons.count()>=8,`${name}: unified command actions incomplete`);
  const commandSnapshot=await page.evaluate(()=>window.PinkCommandCenter.snapshot());assert.strictEqual(commandSnapshot.version,'13.0.0',`${name}: command center version mismatch`);
+ const autonomyOverlay=page.locator('#pinkAutonomyOverlay');
+ assert.strictEqual(await autonomyOverlay.isVisible(),false,`${name}: autonomy modal must start closed`);
+ await page.locator('#pinkAutonomyBtn').click();
+ assert.strictEqual(await autonomyOverlay.isVisible(),true,`${name}: autonomy modal did not open`);
+ await page.locator('#pinkAutonomyOverlay [data-pink-close]').click();
+ assert.strictEqual(await autonomyOverlay.isVisible(),false,`${name}: autonomy modal X did not close`);
+ await page.locator('#pinkAutonomyBtn').click();
+ assert.strictEqual(await autonomyOverlay.isVisible(),true,`${name}: autonomy modal second open failed`);
+ await page.keyboard.press('Escape');
+ assert.strictEqual(await autonomyOverlay.isVisible(),false,`${name}: autonomy modal Escape did not close`);
  const foundation=await page.evaluate(()=>window.PinkFoundation.health());assert.strictEqual(foundation.ok,true,`${name}: foundation health degraded: ${JSON.stringify(foundation)}`);
  const operating=await page.evaluate(()=>window.PinkOperatingCore.snapshot());assert.strictEqual(operating.version,'1.0.0',`${name}: operating core version mismatch`);assert.strictEqual(operating.awareness.currentAgent,'chatgpt-supervisor',`${name}: supervisor identity mismatch`);
  const names=operating.capabilities.map(i=>i.name);assert.ok(names.includes('context.snapshot'),`${name}: context capability missing`);assert.ok(names.includes('health.snapshot'),`${name}: health capability missing`);
@@ -32,11 +43,11 @@ async function smoke(browser,name,contextOptions){
  assert.strictEqual(supervisor.exists,true,`${name}: supervisor voice missing`);assert.ok(supervisor.gateway?.providers?.some(p=>p.id==='chatgpt'),`${name}: ChatGPT provider missing from gateway`);assert.strictEqual(supervisor.intent,true,`${name}: intent router missing`);
  const memoryHealth=await page.evaluate(()=>({version:window.PinkMemoryCloud.version,status:window.PinkMemoryCloud.status,health:window.PinkMemoryCloud.health()}));assert.strictEqual(memoryHealth.version,'4.0.0',`${name}: memory version mismatch`);assert.strictEqual(memoryHealth.status,'local-fallback',`${name}: development must not write cloud memory`);assert.strictEqual(memoryHealth.health.ok,true,`${name}: local memory fallback unhealthy`);
  await page.evaluate(()=>window.PinkMemoryCloud.remember({type:'preference',text:'Browser smoke prefere memória persistente',importance:.8}));let recalled=await page.evaluate(()=>window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));assert.ok(recalled.length>=1,`${name}: browser memory recall failed`);
- if(name==='desktop'){await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>Boolean(window.PinkMemoryCloud&&window.PinkSupervisorVoice&&window.PinkCommandCenter&&window.PinkOrbConsole?.snapshot?.().ready),null,{timeout:15000});recalled=await page.evaluate(()=>window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));assert.ok(recalled.length>=1,`${name}: cross-page memory persistence failed`);assert.ok(await page.locator('#pinkCommandDock').isVisible(),`${name}: command dock lost after reload`);assert.ok(await page.locator('#pinkOrbCanvas').isVisible(),`${name}: orb lost after reload`)}
+ if(name==='desktop'){await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>Boolean(window.PinkMemoryCloud&&window.PinkSupervisorVoice&&window.PinkCommandCenter&&window.PinkOrbConsole?.snapshot?.().ready&&window.PinkAutonomyModalHotfix),null,{timeout:15000});recalled=await page.evaluate(()=>window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));assert.ok(recalled.length>=1,`${name}: cross-page memory persistence failed`);assert.ok(await page.locator('#pinkCommandDock').isVisible(),`${name}: command dock lost after reload`);assert.ok(await page.locator('#pinkOrbCanvas').isVisible(),`${name}: orb lost after reload`);assert.strictEqual(await page.locator('#pinkAutonomyOverlay').isVisible(),false,`${name}: autonomy modal reopened itself after reload`)}
  const avatar=await page.evaluate(()=>window.PinkAvatar3D?.snapshot?.()||{mode:'orb-voice',hasModel:false});assert.ok(avatar.mode||avatar.state,`${name}: avatar/fallback state unavailable`);
  const performance=await page.evaluate(()=>window.PinkPerformance.snapshot());assert.ok(performance&&performance.tier,`${name}: performance profile unavailable`);
  const bodyWidth=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.strictEqual(bodyWidth,true,`${name}: horizontal overflow detected`);
  const fatal=pageErrors.filter(m=>!/ResizeObserver loop/i.test(m));assert.deepStrictEqual(fatal,[],`${name}: page errors: ${fatal.join(' | ')}`);
- console.log(`Browser smoke ${name}: OK (${performance.tier}, orb ready, core ${operating.version}, memory ${memoryHealth.version}, supervisor active, command center ${commandSnapshot.version})`);await context.close();
+ console.log(`Browser smoke ${name}: OK (${performance.tier}, orb ready, autonomy close verified, core ${operating.version}, memory ${memoryHealth.version}, supervisor active, command center ${commandSnapshot.version})`);await context.close();
 }
 (async()=>{await waitForServer();const browser=await chromium.launch({headless:true});try{await smoke(browser,'desktop',{viewport:{width:1440,height:900}});await smoke(browser,'mobile',{...devices['iPhone 14']})}finally{await browser.close();server.kill('SIGTERM')}})().catch(e=>{server.kill('SIGTERM');console.error(e);process.exit(1)});
