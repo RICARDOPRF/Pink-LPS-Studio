@@ -4,8 +4,8 @@
   if (window.PinkPublicConfig) return;
   const host=String(location.hostname||'').toLowerCase();
   const environment=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)?'development':host==='ricardoprf.github.io'?'production':'preview';
-  window.PinkPublicConfig=Object.freeze({schemaVersion:2,appVersion:'12.5.1',environment,
-    supabase:Object.freeze({url:'https://membyrbgynicllzrhjsl.supabase.co',anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1lbWJ5cmJneW5pY2xsenJoanNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzE3MTAsImV4cCI6MjA5NzY0NzcxMH0.5_5fKYLYHlGCvggoF7t9QtwkvVaRX0LKkDtw--brJY0',functions:Object.freeze({brain:'pink-brain',openai:'pink-openai',claude:'pink-claude',nvidia:'pink-nvidia',geminiToken:'pink-gemini-token',geminiReasoning:'pink-gemini-reasoning',vision:'pink-vision',health:'pink-health'})}),
+  window.PinkPublicConfig=Object.freeze({schemaVersion:2,appVersion:'12.5.2',environment,
+    supabase:Object.freeze({url:'https://membyrbgynicllzrhjsl.supabase.co',anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6Im1lbWJ5cmJneW5pY2xsenJoanNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzE3MTAsImV4cCI6MjA5NzY0NzcxMH0.5_5fKYLYHlGCvggoF7t9QtwkvVaRX0LKkDtw--brJY0',functions:Object.freeze({brain:'pink-brain',openai:'pink-openai',claude:'pink-claude',nvidia:'pink-nvidia',geminiToken:'pink-gemini-token',geminiReasoning:'pink-gemini-reasoning',vision:'pink-vision',health:'pink-health'})}),
     voice:Object.freeze({provider:'gemini-live',model:'models/gemini-3.1-flash-live-preview',voiceName:'Aoede',nvidiaFallback:true}),
     ai:Object.freeze({supervisor:'chatgpt',fallbacks:Object.freeze(['claude','nvidia-nemotron','gemini-reasoning']),memory:'pink-memory-cloud'}),
     vision:Object.freeze({provider:'gemini-3-flash-preview',mode:'opt-in',capture:'on-demand',biometricIdentity:false}),
@@ -20,6 +20,6 @@
     if(document.querySelector('script[data-pink-orb-console]'))return;
     await new Promise((resolve,reject)=>{const script=document.createElement('script');script.type='module';script.src=new URL('visual/pink-orb-console.mjs?v=1.0.0',document.baseURI).href;script.dataset.pinkOrbConsole='1';script.onload=resolve;script.onerror=()=>reject(new Error('Failed to load Pink orb console'));document.head.appendChild(script)});
   }
-  async function bootExtendedPlatform(){try{for(const [src,marker] of phaseModules)await loadPhaseModule(src,marker);await loadOrbVoice();window.dispatchEvent(new CustomEvent('pinkplatform:modules-loaded',{detail:{version:'12.5.1'}}))}catch(error){console.warn('Pink extended platform degraded; stable runtime preserved.',error);window.PinkEvolution?.recordIssue?.('platform-bootstrap',error?.message||error)}}
+  async function bootExtendedPlatform(){try{for(const [src,marker] of phaseModules)await loadPhaseModule(src,marker);await loadOrbVoice();window.dispatchEvent(new CustomEvent('pinkplatform:modules-loaded',{detail:{version:'12.5.2'}}))}catch(error){console.warn('Pink extended platform degraded; stable runtime preserved.',error);window.PinkEvolution?.recordIssue?.('platform-bootstrap',error?.message||error)}}
   if(document.readyState==='complete')queueMicrotask(bootExtendedPlatform);else window.addEventListener('load',bootExtendedPlatform,{once:true});
 })();
