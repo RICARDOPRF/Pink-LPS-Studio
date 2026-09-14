@@ -1,0 +1,36 @@
+{
+  "enabled": true,
+  "level": 5,
+  "mode": "autopilot",
+  "maxFilesPerRun": 1,
+  "allowedPrefixes": [
+    "ui/",
+    "agents/",
+    "core/",
+    "runtime/",
+    "evolution/",
+    "studio/",
+    "tools/",
+    "platform/",
+    "visual/",
+    "companion/"
+  ],
+  "blockedPrefixes": [
+    ".github/",
+    "supabase/",
+    "governance/",
+    "tests/"
+  ],
+  "blockedActions": [
+    "change_credentials",
+    "change_billing",
+    "weaken_security",
+    "permission_escalation",
+    "delete_production_data",
+    "force_push",
+    "disable_ci"
+  ],
+  "requireTests": true,
+  "requirePullRequest": true,
+  "autoMergeWhenChecksPass": true
+}
