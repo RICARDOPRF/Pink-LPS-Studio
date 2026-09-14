@@ -29,6 +29,7 @@ jobs:
           node --check foundation/pink-confirm-gate.js
           node --check foundation/pink-undo-stack.js
           node --check governance/pink-autonomy-console.js
+          node --check governance/pink-engineering-panel.js
           node --check core/pink-operating-core.js
           node --check core/pink-intent-context-router.js
           node --check agents/pink-openai.js
@@ -64,6 +65,8 @@ jobs:
         run: node tests/core-intelligence.cjs
       - name: Unified AI Gateway contracts
         run: node tests/unified-ai-gateway.cjs
+      - name: Engineering evolution contracts
+        run: node tests/engineering-evolution.cjs
       - name: Independent audit safety boundaries
         run: node tests/audit-safety-boundaries.cjs
       - name: Memory and People Graph contracts
