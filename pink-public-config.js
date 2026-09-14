@@ -5,7 +5,7 @@
   const host=String(location.hostname||'').toLowerCase();
   const environment=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(host)?'development':host==='ricardoprf.github.io'?'production':'preview';
   window.PinkPublicConfig=Object.freeze({schemaVersion:2,appVersion:'12.4.0',environment,
-    supabase:Object.freeze({url:'https://membyrbgynicllzrhjsl.supabase.co',anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXAiLCJyZWYiOiJtZW1ieXJiZ3luaWNsbHpyaGpzbCIsInJvbGUiOiJhbm9uIiwiaWF0IjoxNzgyMDcxNzEwLCJleHAiOjIwOTc2NDc3MTB9.5_5fKYLYHlGCvggoF7t9QtwkvVaRX0LKkDtw--brJY0',functions:Object.freeze({openai:'pink-openai',nvidia:'pink-nvidia',geminiToken:'pink-gemini-token',geminiReasoning:'pink-gemini-reasoning',vision:'pink-vision',health:'pink-health'})}),
+    supabase:Object.freeze({url:'https://membyrbgynicllzrhjsl.supabase.co',anonKey:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJIUzI1NiIsInJlZiI6Im1lbWJ5cmJneW5pY2xsenJoanNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIwNzE3MTAsImV4cCI6MjA5NzY0NzcxMH0.5_5fKYLYHlGCvggoF7t9QtwkvVaRX0LKkDtw--brJY0',functions:Object.freeze({openai:'pink-openai',nvidia:'pink-nvidia',geminiToken:'pink-gemini-token',geminiReasoning:'pink-gemini-reasoning',vision:'pink-vision',health:'pink-health'})}),
     voice:Object.freeze({provider:'gemini-live',model:'models/gemini-3.1-flash-live-preview',voiceName:'Aoede',nvidiaFallback:true}),
     ai:Object.freeze({supervisor:'chatgpt',fallbacks:Object.freeze(['gemini-reasoning','nvidia-nemotron']),memory:'pink-memory-cloud'}),
     vision:Object.freeze({provider:'gemini-3-flash-preview',mode:'opt-in',capture:'on-demand',biometricIdentity:false}),
