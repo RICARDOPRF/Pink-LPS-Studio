@@ -44,6 +44,9 @@ jobs:
           node --check pink-nvidia.js
           node --check pink-panel-router.js
           node --check pink-store-router.js
+          node --check evolution/pink-autonomous-evolution.js
+          node --check evolution/pink-engineering-loop.js
+          node --check platform/pink-platform.js
           node --check visual/pink-performance.js
           node --check visual/pink-avatar-controller.js
           node --check visual/pink-avatar-registry.js
