@@ -1,0 +1,116 @@
+name: Pink N5 Autopilot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pink-n5-autopilot
+  cancel-in-progress: false
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Guard against concurrent N5 evolution
+        id: guard
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh pr list --state open --search 'head:pink-n5/' --json number --jq 'length')"
+          if [ "$count" != "0" ]; then
+            echo "An N5 evolution PR is already pending; ending this cycle."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create autonomous evolution branch
+        if: steps.guard.outputs.skip != 'true'
+        id: branch
+        run: |
+          branch="pink-n5/$(date -u +%Y%m%d-%H%M%S)"
+          git checkout -b "$branch"
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Pink N5 proposes and applies one improvement
+        if: steps.guard.outputs.skip != 'true'
+        run: node scripts/pink-n5-autopilot.mjs
+
+      - name: Verify repository safety contracts
+        if: steps.guard.outputs.skip != 'true'
+        run: |
+          node scripts/secret-scan.cjs
+          node scripts/dependency-audit.cjs
+          node tests/foundation-safety.cjs
+          node tests/confirm-undo.cjs
+          node tests/core-intelligence.cjs
+          node tests/unified-ai-gateway.cjs
+          node tests/engineering-evolution.cjs
+          node tests/n5-autopilot-policy.cjs
+          node tests/audit-safety-boundaries.cjs
+          node tests/memory-core.cjs
+          node tests/presence-lifecycle.cjs
+          node tests/avatar-controller.cjs
+          node tests/avatar-registry.cjs
+          node tests/avatar-model-adapter.cjs
+          node tests/avatar-validation-gate.cjs
+          node tests/voice-reactive.cjs
+          node tests/holographic-ui.cjs
+          node tests/performance-governor.cjs
+          node tests/runtime-health.cjs
+
+      - name: Install pinned Playwright
+        if: steps.guard.outputs.skip != 'true'
+        run: npm install --no-save --ignore-scripts playwright@1.63.0
+
+      - name: Install Chromium
+        if: steps.guard.outputs.skip != 'true'
+        run: npx playwright@1.63.0 install --with-deps chromium
+
+      - name: Desktop and mobile browser smoke
+        if: steps.guard.outputs.skip != 'true'
+        run: node tests/browser-smoke.cjs
+
+      - name: Commit autonomous improvement
+        if: steps.guard.outputs.skip != 'true'
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          title="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write(r.title.replace(/[\r\n]+/g,' ').slice(0,100))")"
+          git config user.name "Pink N5 Autopilot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A ':!.pink-n5-result.json'
+          git commit -m "feat(n5): $title"
+          git push origin "${{ steps.branch.outputs.name }}"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create reviewed PR and merge validated change
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write(('Pink N5: '+r.title).slice(0,120))")"
+          body="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write('Autonomous N5 evolution.\n\nFile: `'+r.path+'`\n\nRationale: '+r.rationale+'\n\nFull Pink safety contracts and desktop/mobile browser smoke passed inside the N5 workflow before this PR was created. The change is small, reversible and restricted by governance/n5-autopilot.json.')")"
+          url="$(gh pr create --base main --head '${{ steps.branch.outputs.name }}' --title "$title" --body "$body")"
+          echo "Created $url"
+          gh pr merge "$url" --squash --delete-branch
