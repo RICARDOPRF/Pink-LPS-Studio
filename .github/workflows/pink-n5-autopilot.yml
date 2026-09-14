@@ -1,0 +1,86 @@
+name: Pink N5 Autopilot
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pink-n5-autopilot
+  cancel-in-progress: false
+
+jobs:
+  evolve:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Stop if an N5 evolution PR is already open
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          count="$(gh pr list --state open --search 'head:pink-n5/' --json number --jq 'length')"
+          if [ "$count" != "0" ]; then
+            echo "An N5 evolution PR is already pending; ending this cycle."
+            exit 0
+          fi
+
+      - name: Create autonomous evolution branch
+        id: branch
+        run: |
+          branch="pink-n5/$(date -u +%Y%m%d-%H%M%S)"
+          git checkout -b "$branch"
+          echo "name=$branch" >> "$GITHUB_OUTPUT"
+
+      - name: Pink N5 proposes and applies one improvement
+        run: node scripts/pink-n5-autopilot.mjs
+
+      - name: Verify repository safety contracts
+        run: |
+          node scripts/secret-scan.cjs
+          node scripts/dependency-audit.cjs
+          node tests/foundation-safety.cjs
+          node tests/confirm-undo.cjs
+          node tests/core-intelligence.cjs
+          node tests/unified-ai-gateway.cjs
+          node tests/engineering-evolution.cjs
+          node tests/audit-safety-boundaries.cjs
+
+      - name: Commit autonomous improvement
+        id: commit
+        run: |
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          title="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write(r.title.replace(/[\r\n]+/g,' ').slice(0,100))")"
+          git config user.name "Pink N5 Autopilot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A ':!.pink-n5-result.json'
+          git commit -m "feat(n5): $title"
+          git push origin "${{ steps.branch.outputs.name }}"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create PR and enable merge after CI
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write(('Pink N5: '+r.title).slice(0,120))")"
+          body="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write('Autonomous N5 evolution.\n\nFile: `'+r.path+'`\n\nRationale: '+r.rationale+'\n\nThis PR was created by Pink N5. Existing Pink CI remains the production gate; merge is requested only after required checks pass.')")"
+          url="$(gh pr create --base main --head '${{ steps.branch.outputs.name }}' --title "$title" --body "$body")"
+          echo "Created $url"
+          gh pr merge "$url" --squash --auto --delete-branch
