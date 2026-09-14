@@ -1,7 +1,7 @@
 name: Pink CI
 on:
   push:
-    branches: [main, 'phase/**', 'evolution/**', 'feature/**', 'lab/**']
+    branches: [main, 'phase/**', 'evolution/**', 'feature/**', 'lab/**', 'pink-n5/**']
   pull_request:
     branches: [main]
 permissions:
@@ -59,6 +59,7 @@ jobs:
           node --check visual/pink-3d-presence.js
           node --check visual/pink-orb-console.mjs
           node --check visual/pink-runtime-health.js
+          node --check scripts/pink-n5-autopilot.mjs
       - name: Foundation safety contracts
         run: node tests/foundation-safety.cjs
       - name: Human confirmation and undo contracts
@@ -69,6 +70,8 @@ jobs:
         run: node tests/unified-ai-gateway.cjs
       - name: Engineering evolution contracts
         run: node tests/engineering-evolution.cjs
+      - name: N5 autonomous evolution policy
+        run: node tests/n5-autopilot-policy.cjs
       - name: Independent audit safety boundaries
         run: node tests/audit-safety-boundaries.cjs
       - name: Memory and People Graph contracts
