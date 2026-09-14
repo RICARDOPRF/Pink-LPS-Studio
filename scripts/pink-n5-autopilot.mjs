@@ -10,9 +10,17 @@ if (!policy.enabled || Number(policy.level) !== 5) {
   process.exit(0);
 }
 
-const endpoint = process.env.PINK_OPENAI_ENDPOINT;
-const anonKey = process.env.PINK_SUPABASE_ANON_KEY;
-if (!endpoint || !anonKey) throw new Error('PINK_OPENAI_ENDPOINT/PINK_SUPABASE_ANON_KEY required');
+async function publicSupabaseConfig() {
+  const source = await fs.readFile(path.join(root, 'pink-public-config.js'), 'utf8');
+  const url = source.match(/url:'([^']+supabase\.co)'/)?.[1] || null;
+  const anonKey = source.match(/anonKey:'([^']+)'/)?.[1] || null;
+  const fn = source.match(/openai:'([^']+)'/)?.[1] || 'pink-openai';
+  return { endpoint: url ? `${url.replace(/\/$/, '')}/functions/v1/${fn}` : null, anonKey };
+}
+const publicCfg = await publicSupabaseConfig();
+const endpoint = process.env.PINK_OPENAI_ENDPOINT || publicCfg.endpoint;
+const anonKey = process.env.PINK_SUPABASE_ANON_KEY || publicCfg.anonKey;
+if (!endpoint || !anonKey) throw new Error('Pink public Supabase/OpenAI configuration unavailable');
 
 const allowed = policy.allowedPrefixes || [];
 const blocked = policy.blockedPrefixes || [];
