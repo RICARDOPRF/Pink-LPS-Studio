@@ -56,6 +56,7 @@ jobs:
           node --check visual/pink-voice-reactive.js
           node --check visual/pink-holographic-ui.js
           node --check visual/pink-3d-presence.js
+          node --check visual/pink-orb-console.mjs
           node --check visual/pink-runtime-health.js
       - name: Foundation safety contracts
         run: node tests/foundation-safety.cjs

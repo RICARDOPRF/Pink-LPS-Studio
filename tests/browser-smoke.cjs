@@ -12,9 +12,15 @@ async function smoke(browser,name,contextOptions){
  await page.waitForFunction(()=>Boolean(window.PinkCore&&window.PinkPerformance&&window.PinkFoundation&&window.PinkOperatingCore),null,{timeout:12000});
  await page.waitForFunction(()=>Boolean(window.PinkMemoryCore&&window.PinkMemoryCloud),null,{timeout:12000});
  await page.waitForFunction(()=>Boolean(window.PinkSupervisorVoice&&window.PinkOpenAI&&window.PinkAIGateway&&window.PinkIntentRouter),null,{timeout:12000});
+ await page.waitForFunction(()=>Boolean(window.PinkOrbConsole?.snapshot?.().ready),null,{timeout:15000});
  const title=await page.title();assert.match(title,/Pink LPS Studio/i,`${name}: title mismatch`);
  const stage=page.locator('#pinkStage');assert.strictEqual(await stage.count(),1,`${name}: Pink stage missing`);assert.ok(await stage.isVisible(),`${name}: Pink stage not visible`);
- const portrait=page.locator('#pinkStage .portrait');assert.ok(await portrait.isVisible(),`${name}: portrait fallback not visible`);
+ const orb=page.locator('#pinkOrbCanvas');assert.strictEqual(await orb.count(),1,`${name}: 3D orb canvas missing`);assert.ok(await orb.isVisible(),`${name}: 3D orb canvas not visible`);
+ const waveform=page.locator('#pinkOrbWaveform');assert.ok(await waveform.isVisible(),`${name}: Pink waveform not visible`);
+ const input=page.locator('#pinkOrbTextInput');assert.ok(await input.isVisible(),`${name}: Pink text input not visible`);
+ const mic=page.locator('#pinkOrbMicBtn');assert.ok(await mic.isVisible(),`${name}: Pink microphone control not visible`);
+ const send=page.locator('#pinkOrbSendBtn');assert.ok(await send.isVisible(),`${name}: Pink send control not visible`);
+ const orbState=await page.evaluate(()=>window.PinkOrbConsole.snapshot());assert.strictEqual(orbState.ready,true,`${name}: orb console not ready`);assert.strictEqual(orbState.state,'idle',`${name}: orb initial state mismatch`);
  const foundation=await page.evaluate(()=>window.PinkFoundation.health());assert.strictEqual(foundation.ok,true,`${name}: foundation health degraded: ${JSON.stringify(foundation)}`);
  const operating=await page.evaluate(()=>window.PinkOperatingCore.snapshot());assert.strictEqual(operating.version,'1.0.0',`${name}: operating core version mismatch`);assert.strictEqual(operating.awareness.currentAgent,'chatgpt-supervisor',`${name}: supervisor identity mismatch`);
  const names=operating.capabilities.map(i=>i.name);assert.ok(names.includes('context.snapshot'),`${name}: context capability missing`);assert.ok(names.includes('health.snapshot'),`${name}: health capability missing`);
@@ -22,11 +28,11 @@ async function smoke(browser,name,contextOptions){
  assert.strictEqual(supervisor.exists,true,`${name}: supervisor voice missing`);assert.ok(supervisor.gateway?.providers?.some(p=>p.id==='chatgpt'),`${name}: ChatGPT provider missing from gateway`);assert.strictEqual(supervisor.intent,true,`${name}: intent router missing`);
  const memoryHealth=await page.evaluate(()=>({version:window.PinkMemoryCloud.version,status:window.PinkMemoryCloud.status,health:window.PinkMemoryCloud.health()}));assert.strictEqual(memoryHealth.version,'4.0.0',`${name}: memory version mismatch`);assert.strictEqual(memoryHealth.status,'local-fallback',`${name}: development must not write cloud memory`);assert.strictEqual(memoryHealth.health.ok,true,`${name}: local memory fallback unhealthy`);
  await page.evaluate(()=>window.PinkMemoryCloud.remember({type:'preference',text:'Browser smoke prefere memória persistente',importance:.8}));let recalled=await page.evaluate(()=>window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));assert.ok(recalled.length>=1,`${name}: browser memory recall failed`);
- if(name==='desktop'){await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>Boolean(window.PinkMemoryCloud&&window.PinkSupervisorVoice),null,{timeout:12000});recalled=await page.evaluate(()=>window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));assert.ok(recalled.length>=1,`${name}: cross-page memory persistence failed`)}
- const avatar=await page.evaluate(()=>window.PinkAvatar3D?.snapshot?.()||{mode:'portrait-fallback',hasModel:false});assert.ok(avatar.mode||avatar.state,`${name}: avatar/fallback state unavailable`);
+ if(name==='desktop'){await page.reload({waitUntil:'domcontentloaded'});await page.waitForFunction(()=>Boolean(window.PinkMemoryCloud&&window.PinkSupervisorVoice&&window.PinkOrbConsole?.snapshot?.().ready),null,{timeout:15000});recalled=await page.evaluate(()=>window.PinkMemoryCloud.recall('memória persistente',{minScore:.1}));assert.ok(recalled.length>=1,`${name}: cross-page memory persistence failed`)}
+ const avatar=await page.evaluate(()=>window.PinkAvatar3D?.snapshot?.()||{mode:'orb-voice',hasModel:false});assert.ok(avatar.mode||avatar.state,`${name}: avatar/fallback state unavailable`);
  const performance=await page.evaluate(()=>window.PinkPerformance.snapshot());assert.ok(performance&&performance.tier,`${name}: performance profile unavailable`);
  const bodyWidth=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.strictEqual(bodyWidth,true,`${name}: horizontal overflow detected`);
  const fatal=pageErrors.filter(m=>!/ResizeObserver loop/i.test(m));assert.deepStrictEqual(fatal,[],`${name}: page errors: ${fatal.join(' | ')}`);
- console.log(`Browser smoke ${name}: OK (${performance.tier}, core ${operating.version}, memory ${memoryHealth.version}, supervisor active)`);await context.close();
+ console.log(`Browser smoke ${name}: OK (${performance.tier}, orb ready, core ${operating.version}, memory ${memoryHealth.version}, supervisor active)`);await context.close();
 }
 (async()=>{await waitForServer();const browser=await chromium.launch({headless:true});try{await smoke(browser,'desktop',{viewport:{width:1440,height:900}});await smoke(browser,'mobile',{...devices['iPhone 14']})}finally{await browser.close();server.kill('SIGTERM')}})().catch(e=>{server.kill('SIGTERM');console.error(e);process.exit(1)});
