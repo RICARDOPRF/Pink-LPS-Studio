@@ -1,4 +1,4 @@
-// Pink Supervisor Voice Runtime — STT -> Memory/Context -> ChatGPT Supervisor -> Gemini/NVIDIA fallback -> TTS.
+// Pink Supervisor Voice Runtime — STT -> Memory/Context -> Unified Pink Brain -> TTS.
 (() => {
   'use strict';
   const $=s=>document.querySelector(s);
@@ -9,32 +9,49 @@
     const stage=$('#pinkStage');if(stage)stage.dataset.state=name;
     if($('#avatarStateText'))$('#avatarStateText').textContent=label||({idle:'Pronta',listening:'Ouvindo você',thinking:'Pensando',speaking:'Falando',error:'Atenção'}[name]||name);
     if($('#systemBadge'))$('#systemBadge').textContent=name==='error'?'Pink com atenção':name==='thinking'?'Pink pensando':name==='speaking'?'Pink falando':name==='listening'?'Pink ouvindo':'Pink online';
-    if($('#voiceStatus'))$('#voiceStatus').textContent=name==='thinking'?'ChatGPT Supervisor · processando':name==='speaking'?'Pink · falando':name==='listening'?'Pink · ouvindo':'Pink Supervisor Voice · pronta';
+    if($('#voiceStatus'))$('#voiceStatus').textContent=name==='thinking'?'Pink Brain · processando':name==='speaking'?'Pink · falando':name==='listening'?'Pink · ouvindo':'Pink Supervisor Voice · pronta';
   }
+
   function add(role,text){
     const timeline=$('#timeline'),value=String(text||'').trim();if(!timeline||!value)return;
     const item=document.createElement('div');item.className=`timeline-item ${role}`;
     item.innerHTML=`<div class="avatar-mini">${role==='assistant'?'P':'V'}</div><div class="bubble"><strong>${role==='assistant'?'Pink':'Você'}</strong><p></p><time>agora</time></div>`;
     item.querySelector('p').textContent=value;timeline.appendChild(item);timeline.scrollTop=timeline.scrollHeight;
   }
+
   function render(){
     const mount=$('#voiceWidgetMount');if(!mount)return;
-    mount.innerHTML=`<div class="pink-call-control"><div class="call-status"><span class="call-ring"></span><div><small>PINK SUPERVISOR VOICE</small><strong>${active?'Conversa ativa':starting?'Iniciando…':'ChatGPT + memória + fallbacks'}</strong></div></div><button id="pinkSupervisorBtn" class="primary-btn" ${starting?'disabled':''}>${active?'Encerrar conversa':starting?'Iniciando…':'Falar com a Pink'}</button></div>`;
+    mount.innerHTML=`<div class="pink-call-control"><div class="call-status"><span class="call-ring"></span><div><small>PINK SUPERVISOR VOICE</small><strong>${active?'Conversa ativa':starting?'Iniciando…':'ChatGPT principal · Claude/NVIDIA/Gemini fallback'}</strong></div></div><button id="pinkSupervisorBtn" class="primary-btn" ${starting?'disabled':''}>${active?'Encerrar conversa':starting?'Iniciando…':'Falar com a Pink'}</button></div>`;
     $('#pinkSupervisorBtn')?.addEventListener('click',()=>active?stop():start());
   }
-  async function geminiAsk(prompt){
-    const cfg=window.PinkPublicConfig?.supabase||{},fn=cfg.functions?.geminiReasoning||'pink-gemini-reasoning';
-    if(!cfg.url||!cfg.anonKey)throw new Error('gemini_reasoning_config_missing');
-    const r=await fetch(`${cfg.url}/functions/v1/${fn}`,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input:prompt,thinkingLevel:'high',maxOutputTokens:1800})});
-    const p=await r.json().catch(()=>({}));if(!r.ok||!p?.ok)throw new Error(p?.providerMessage||p?.error||`Gemini HTTP ${r.status}`);return {reply:String(p.output||'').trim(),provider:'gemini-reasoning'};
+
+  async function memoryContext(query){
+    try{
+      const memories=await window.PinkMemoryCloud?.recall?.(query,{limit:8,minScore:.18})||[];
+      if(!memories.length)return '';
+      return memories.map((m,i)=>`${i+1}. [${m.memory_type||m.type||'memory'}] ${m.content_text||m.text||''}`).filter(Boolean).join('\n');
+    }catch(_){return ''}
   }
+
   async function askBrain(prompt){
-    const errors=[];
-    if(window.PinkOpenAI?.ask){try{const r=await window.PinkOpenAI.ask(prompt,{reasoningEffort:'medium',maxOutputTokens:1800});if(r?.reply)return {...r,provider:'chatgpt'}}catch(e){errors.push(`chatgpt:${e.message||e}`)}}
-    try{const r=await geminiAsk(prompt);if(r.reply)return r}catch(e){errors.push(`gemini:${e.message||e}`)}
-    if(window.PinkNVIDIA?.ask){try{const r=await window.PinkNVIDIA.ask(prompt,{temperature:.25,maxTokens:900});if(r?.reply)return {...r,provider:'nvidia'}}catch(e){errors.push(`nvidia:${e.message||e}`)}}
-    throw new Error(errors.join(' | ')||'no_reasoning_provider_available');
+    const cfg=window.PinkPublicConfig?.supabase||{};
+    if(!cfg.url||!cfg.anonKey)throw new Error('pink_brain_config_missing');
+    const memory=await memoryContext(prompt);
+    const activeProject=window.PinkOperatingCore?.snapshot?.().awareness?.activeProject||window.PinkCore?.activeProject||null;
+    const input=[activeProject?`Projeto ativo: ${activeProject}`:'',memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
+    const endpoint=`${String(cfg.url).replace(/\/$/,'')}/functions/v1/pink-brain`;
+    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input,reasoningEffort:'medium',thinkingLevel:'high',maxOutputTokens:1800})});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok||!payload?.ok){
+      const attempts=Array.isArray(payload?.attempts)?payload.attempts.map(x=>`${x.provider}:${x.error||x.status}`).join(' | '):'';
+      throw new Error(payload?.message||payload?.error||attempts||`Pink Brain HTTP ${response.status}`);
+    }
+    const reply=String(payload.reply||'').trim();
+    if(!reply)throw new Error('pink_brain_empty_output');
+    try{window.PinkMemoryCloud?.remember?.({type:'conversation',text:`Pergunta: ${prompt}\nResposta: ${reply}`,importance:.35,source:`pink-brain:${payload.provider||'unknown'}`}).catch(()=>{})}catch(_){ }
+    return {reply,provider:payload.provider||'pink-brain',model:payload.model||null,usage:payload.usage||null,attempts:payload.attempts||[]};
   }
+
   function speak(text){
     return new Promise(resolve=>{
       const value=String(text||'').trim();if(!value){resolve();return}
@@ -45,6 +62,7 @@
       u.onstart=()=>state('speaking');u.onend=u.onerror=()=>{speaking=false;if(active){state('listening');setTimeout(()=>{try{recognition?.start?.()}catch(_){}},250)}resolve()};window.speechSynthesis.speak(u);
     });
   }
+
   async function handle(text){
     const q=String(text||'').trim();if(!q)return;add('user',q);state('thinking');
     try{
@@ -55,12 +73,17 @@
       const opText=result&&result.status==='completed'?`\n\nResultado operacional verificado:\n${JSON.stringify(result).slice(0,5000)}`:'';
       const recent=history.slice(-6).map(x=>`${x.role}: ${x.content}`).join('\n');
       const response=await askBrain(`${recent?`Histórico recente:\n${recent}\n\n`:''}Pergunta atual: ${q}${opText}`);
-      const reply=response.reply||'Não encontrei uma resposta disponível.';history.push({role:'user',content:q},{role:'assistant',content:reply});while(history.length>12)history.shift();add('assistant',reply);await speak(reply);
+      const reply=response.reply||'Não encontrei uma resposta disponível.';
+      history.push({role:'user',content:q},{role:'assistant',content:reply});while(history.length>12)history.shift();
+      try{window.PinkAIGateway?.mark?.('chatgpt',response.provider==='openai'?'healthy':'degraded',{lastUsedAt:new Date().toISOString()})}catch(_){}
+      add('assistant',reply);await speak(reply);
     }catch(error){
       console.error('Pink supervisor runtime',error);window.PinkEvolution?.recordIssue?.('supervisor-runtime',error?.message||error);state('error');
-      const msg='Eu ouvi sua pergunta, mas nenhum dos meus cérebros de resposta está disponível agora. Verifique as integrações ChatGPT, Gemini ou NVIDIA.';add('assistant',msg);await speak(msg);if(active)state('listening');
+      const msg='Eu ouvi sua pergunta, mas o Pink Brain não conseguiu obter resposta de nenhum provedor configurado no Supabase. Verifique chaves, crédito e quota dos provedores.';
+      add('assistant',msg);await speak(msg);if(active)state('listening');
     }
   }
+
   function ctor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null}
   async function start(){
     if(active||starting)return;starting=true;render();
@@ -72,8 +95,9 @@
     recognition.onend=()=>{if(active&&!speaking)setTimeout(()=>{try{recognition.start()}catch(_){}},300)};
     try{recognition.start()}catch(_){}active=true;starting=false;render();state('listening');$('#wakeGate')?.setAttribute('hidden','');
   }
+
   function stop(){active=false;starting=false;speaking=false;try{recognition?.stop?.()}catch(_){}recognition=null;window.speechSynthesis?.cancel?.();render();state('idle')}
-  function install(){try{window.PinkVoice?.stop?.()}catch(_){}window.PinkSupervisorVoice={start,stop,ask:handle,get active(){return active}};render();state('idle');
+  function install(){try{window.PinkVoice?.stop?.()}catch(_){}window.PinkSupervisorVoice={start,stop,ask:handle,askBrain,get active(){return active}};render();state('idle');
     document.addEventListener('click',e=>{const t=e.target?.closest?.('#wakePinkBtn,#callControlBtn,#geminiCallBtn');if(!t)return;e.preventDefault();e.stopImmediatePropagation();active?stop():start()},{capture:true});
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
