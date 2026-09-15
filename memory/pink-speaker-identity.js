@@ -1,18 +1,28 @@
-// Pink Speaker Identity — conversational identity, no biometric inference.
+// Pink Speaker Identity — conversational identity with trusted-device default, no biometric inference.
 (() => {
   'use strict';
   const ADMIN_NAME='Ricardo';
   const CURRENT_KEY='pink_current_speaker_v2';
   const PENDING_KEY='pink_pending_person_v1';
+  const TRUSTED_KEY='pink_trusted_device_admin_v1';
   const ADMIN_ALIASES=['ricardo','paulo ricardo','paulo ricardo de oliveira freitas'];
   const RELATIONS=['namorada','namorado','esposa','marido','noiva','noivo','companheira','companheiro','amiga','amigo','irmã','irma','irmão','irmao','mãe','mae','pai','filha','filho','prima','primo','tia','tio','colega','sócia','socia','sócio','socio','chefe','gestor','gestora'];
   const normalize=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
   const pretty=name=>String(name||'').trim().split(/\s+/).filter(Boolean).map(x=>x.charAt(0).toUpperCase()+x.slice(1).toLowerCase()).join(' ');
 
+  function adminSession(){return {name:ADMIN_NAME,role:'admin',relationship:'administrador',identifiedBy:'trusted-device',at:new Date().toISOString()}}
   function readCurrent(){try{return JSON.parse(sessionStorage.getItem(CURRENT_KEY)||'null')}catch(_){return null}}
   function writeCurrent(value){try{value?sessionStorage.setItem(CURRENT_KEY,JSON.stringify(value)):sessionStorage.removeItem(CURRENT_KEY)}catch(_){}return value}
   function pending(){try{return sessionStorage.getItem(PENDING_KEY)||''}catch(_){return ''}}
   function setPending(name){try{name?sessionStorage.setItem(PENDING_KEY,name):sessionStorage.removeItem(PENDING_KEY)}catch(_){} }
+  function isTrustedDevice(){try{return localStorage.getItem(TRUSTED_KEY)!=='0'}catch(_){return true}}
+  function setTrustedDevice(value=true){try{localStorage.setItem(TRUSTED_KEY,value?'1':'0')}catch(_){}return value}
+  function ensureDefaultSpeaker(){
+    const current=readCurrent();
+    if(current)return current;
+    if(isTrustedDevice())return writeCurrent(adminSession());
+    return null;
+  }
   function isAdminName(name=''){const n=normalize(name);return ADMIN_ALIASES.some(alias=>n===normalize(alias)||n.endsWith(' '+normalize(alias))||normalize(alias).endsWith(' '+n))}
   function extractRelationship(text=''){
     const n=normalize(text);
@@ -34,7 +44,7 @@
     return null;
   }
   function wantsSpeakerReset(text=''){
-    const n=normalize(text);return /\b(trocar pessoa|troca a pessoa|trocar usuario|troca usuario|outra pessoa vai falar|mudar quem esta falando|mudar quem está falando)\b/.test(n);
+    const n=normalize(text);return /\b(trocar pessoa|troca a pessoa|trocar usuario|troca usuario|outra pessoa vai falar|mudar quem esta falando|mudar quem está falando|nao sou o ricardo|não sou o ricardo)\b/.test(n);
   }
   function likelyOnlyIdentity(text=''){
     const n=normalize(text);return n.split(/\s+/).length<=8&&!/[?]|\b(qual|quanto|como|abre|abra|mostra|mostre|analisa|altera|muda|quero|preciso)\b/.test(n);
@@ -50,13 +60,14 @@
     try{await window.PinkMemoryCloud?.remember?.({type:'identity',text:'O administrador principal da Pink se chama Ricardo e prefere ser chamado de Ricardo.',importance:1,explicit:true,source:'speaker-identity'})}catch(_){}
   }
   function context(){
-    const s=readCurrent();if(!s)return 'Pessoa falando: não identificada. Antes de tratar a fala como sendo do administrador, confirme quem está falando.';
-    return s.role==='admin'?`Pessoa falando: Ricardo. Papel: administrador principal da Pink.`:`Pessoa falando: ${s.name}. Relação informada com Ricardo: ${s.relationship||'ainda não informada'}. Esta pessoa não é o administrador.`;
+    const s=readCurrent()||ensureDefaultSpeaker();
+    if(!s)return 'Pessoa falando: não identificada. Pergunte quem está falando somente porque o modo de troca de pessoa foi ativado.';
+    return s.role==='admin'?`Pessoa falando: Ricardo. Papel: administrador principal da Pink. Este é um dispositivo confiável do Ricardo; não pergunte novamente quem está falando, a menos que haja troca explícita de pessoa.`:`Pessoa falando: ${s.name}. Relação informada com Ricardo: ${s.relationship||'ainda não informada'}. Esta pessoa não é o administrador.`;
   }
   async function process(text=''){
-    const spoken=String(text||'').trim();if(!spoken)return {intercept:false,current:readCurrent(),context:context()};
+    const spoken=String(text||'').trim();if(!spoken)return {intercept:false,current:ensureDefaultSpeaker(),context:context()};
     if(wantsSpeakerReset(spoken)){
-      writeCurrent(null);setPending('');
+      writeCurrent(null);setPending('');setTrustedDevice(false);
       return {intercept:true,response:'Certo. Quem está falando comigo agora?',current:null,context:context()};
     }
 
@@ -64,9 +75,10 @@
     const relationship=extractRelationship(spoken);
     if(name){
       if(isAdminName(name)){
-        setPending('');writeCurrent({name:ADMIN_NAME,role:'admin',relationship:'administrador',identifiedBy:'self-report',at:new Date().toISOString()});await rememberAdmin();
-        return {intercept:likelyOnlyIdentity(spoken),response:'Certo, Ricardo. Vou tratar esta sessão como a do administrador. O que você quer fazer?',current:readCurrent(),context:context()};
+        setPending('');setTrustedDevice(true);writeCurrent({...adminSession(),identifiedBy:'self-report'});await rememberAdmin();
+        return {intercept:likelyOnlyIdentity(spoken),response:'Certo, Ricardo. Vou manter você como administrador deste dispositivo e não vou ficar perguntando quem está falando. O que você quer fazer?',current:readCurrent(),context:context()};
       }
+      setTrustedDevice(false);
       writeCurrent({name,role:'guest',relationship:relationship||null,identifiedBy:'self-report',at:new Date().toISOString()});
       if(relationship){setPending('');await rememberPerson(name,relationship);return {intercept:likelyOnlyIdentity(spoken),response:`Prazer, ${name}. Vou lembrar que você é ${relationship} do Ricardo. O que você gostaria de fazer?`,current:readCurrent(),context:context()};}
       setPending(name);await rememberPerson(name,null);
@@ -82,10 +94,11 @@
       return {intercept:true,response:`${p}, antes de continuar eu preciso saber qual é a sua relação com o Ricardo.`,current:readCurrent(),context:context()};
     }
 
-    const current=readCurrent();
-    if(!current)return {intercept:true,response:'Antes de continuar, quem está falando comigo?',current:null,context:context()};
+    const current=readCurrent()||ensureDefaultSpeaker();
+    if(!current)return {intercept:true,response:'Quem está falando comigo?',current:null,context:context()};
     return {intercept:false,current,context:context()};
   }
 
-  window.PinkSpeakerIdentity={ADMIN_NAME,process,current:readCurrent,context,reset:()=>{writeCurrent(null);setPending('');return true},extractName,extractRelationship};
+  ensureDefaultSpeaker();
+  window.PinkSpeakerIdentity={ADMIN_NAME,process,current:()=>readCurrent()||ensureDefaultSpeaker(),context,reset:()=>{writeCurrent(null);setPending('');setTrustedDevice(false);return true},trustRicardo:()=>{setPending('');setTrustedDevice(true);writeCurrent(adminSession());return readCurrent()},extractName,extractRelationship};
 })();
