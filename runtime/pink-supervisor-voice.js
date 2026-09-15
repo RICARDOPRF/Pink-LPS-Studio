@@ -2,14 +2,18 @@
 (() => {
   'use strict';
   const $=s=>document.querySelector(s);
-  let recognition=null,active=false,speaking=false,starting=false;
+  let recognition=null,active=false,speaking=false,starting=false,lastProvider='nvidia';
   const history=[];
+
+  function providerLabel(){
+    return lastProvider==='nvidia'?'NVIDIA Nemotron':lastProvider==='gemini'?'Gemini':lastProvider==='openai'?'OpenAI':lastProvider==='claude'?'Claude':'Pink Brain';
+  }
 
   function state(name,label){
     const stage=$('#pinkStage');if(stage)stage.dataset.state=name;
     if($('#avatarStateText'))$('#avatarStateText').textContent=label||({idle:'Pronta',listening:'Ouvindo você',thinking:'Pensando',speaking:'Falando',error:'Atenção'}[name]||name);
     if($('#systemBadge'))$('#systemBadge').textContent=name==='error'?'Pink com atenção':name==='thinking'?'Pink pensando':name==='speaking'?'Pink falando':name==='listening'?'Pink ouvindo':'Pink online';
-    if($('#voiceStatus'))$('#voiceStatus').textContent=name==='thinking'?'Pink Brain · processando':name==='speaking'?'Pink · falando':name==='listening'?'Pink · ouvindo':'Pink Supervisor Voice · pronta';
+    if($('#voiceStatus'))$('#voiceStatus').textContent=name==='thinking'?`${providerLabel()} · processando`:name==='speaking'?`Pink · falando via ${providerLabel()}`:name==='listening'?'Pink · ouvindo':`Pink Supervisor Voice · ${providerLabel()} pronta`;
   }
 
   function add(role,text){
@@ -21,7 +25,7 @@
 
   function render(){
     const mount=$('#voiceWidgetMount');if(!mount)return;
-    mount.innerHTML=`<div class="pink-call-control"><div class="call-status"><span class="call-ring"></span><div><small>PINK SUPERVISOR VOICE</small><strong>${active?'Conversa ativa':starting?'Iniciando…':'ChatGPT principal · Claude/NVIDIA/Gemini fallback'}</strong></div></div><button id="pinkSupervisorBtn" class="primary-btn" ${starting?'disabled':''}>${active?'Encerrar conversa':starting?'Iniciando…':'Falar com a Pink'}</button></div>`;
+    mount.innerHTML=`<div class="pink-call-control"><div class="call-status"><span class="call-ring"></span><div><small>PINK SUPERVISOR VOICE</small><strong>${active?'Conversa ativa':starting?'Iniciando…':`${providerLabel()} principal · Gemini fallback`}</strong></div></div><button id="pinkSupervisorBtn" class="primary-btn" ${starting?'disabled':''}>${active?'Encerrar conversa':starting?'Iniciando…':'Falar com a Pink'}</button></div>`;
     $('#pinkSupervisorBtn')?.addEventListener('click',()=>active?stop():start());
   }
 
@@ -48,8 +52,10 @@
     }
     const reply=String(payload.reply||'').trim();
     if(!reply)throw new Error('pink_brain_empty_output');
-    try{window.PinkMemoryCloud?.remember?.({type:'conversation',text:`Pergunta: ${prompt}\nResposta: ${reply}`,importance:.35,source:`pink-brain:${payload.provider||'unknown'}`}).catch(()=>{})}catch(_){ }
-    return {reply,provider:payload.provider||'pink-brain',model:payload.model||null,usage:payload.usage||null,attempts:payload.attempts||[]};
+    lastProvider=payload.provider||'pink-brain';
+    render();
+    try{window.PinkMemoryCloud?.remember?.({type:'conversation',text:`Pergunta: ${prompt}\nResposta: ${reply}`,importance:.35,source:`pink-brain:${lastProvider}`}).catch(()=>{})}catch(_){ }
+    return {reply,provider:lastProvider,model:payload.model||null,usage:payload.usage||null,attempts:payload.attempts||[]};
   }
 
   function speak(text){
@@ -75,11 +81,14 @@
       const response=await askBrain(`${recent?`Histórico recente:\n${recent}\n\n`:''}Pergunta atual: ${q}${opText}`);
       const reply=response.reply||'Não encontrei uma resposta disponível.';
       history.push({role:'user',content:q},{role:'assistant',content:reply});while(history.length>12)history.shift();
-      try{window.PinkAIGateway?.mark?.('chatgpt',response.provider==='openai'?'healthy':'degraded',{lastUsedAt:new Date().toISOString()})}catch(_){}
+      try{
+        const gatewayId=response.provider==='nvidia'?'nvidia-nemotron':response.provider;
+        window.PinkAIGateway?.mark?.(gatewayId,'healthy',{lastUsedAt:new Date().toISOString(),model:response.model||null});
+      }catch(_){}
       add('assistant',reply);await speak(reply);
     }catch(error){
       console.error('Pink supervisor runtime',error);window.PinkEvolution?.recordIssue?.('supervisor-runtime',error?.message||error);state('error');
-      const msg='Eu ouvi sua pergunta, mas o Pink Brain não conseguiu obter resposta de nenhum provedor configurado no Supabase. Verifique chaves, crédito e quota dos provedores.';
+      const msg='Eu ouvi sua pergunta, mas o Pink Brain não conseguiu obter resposta de nenhum provedor configurado no Supabase. Verifique a conexão e tente novamente.';
       add('assistant',msg);await speak(msg);if(active)state('listening');
     }
   }
