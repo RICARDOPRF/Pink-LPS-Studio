@@ -10,6 +10,7 @@
   const IMPORTANT_TYPES=new Set(['identity','relationship','preference','decision','correction','project_alias','project_fact','user_instruction']);
   const TRANSIENT_TYPES=new Set(['greeting','smalltalk','ephemeral_metric','voice_state','loading','typing']);
   const STOP=new Set(['a','o','as','os','de','da','do','das','dos','e','em','um','uma','para','por','com','que','the','and','to','of']);
+  const TARGET_LABEL='Ricardo';
   const clamp=(n,min=0,max=1)=>Math.max(min,Math.min(max,Number(n)||0));
   const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
   const nowIso=()=>new Date().toISOString();
@@ -74,7 +75,7 @@
     async upsertMemory(record){const idx=this.state.memories.findIndex(x=>x.fingerprint===record.fingerprint);const value={...clone(record),updated_at:nowIso(),created_at:idx>=0?this.state.memories[idx].created_at||nowIso():nowIso()};if(idx>=0)this.state.memories[idx]=value;else this.state.memories.push(value);this.state.memories=this.state.memories.slice(-500);this.save();return clone(value)}
     async listMemories(){return clone(this.state.memories)}
     async upsertPerson(person){const key=normalize(person.normalized_name||person.display_name||person.name);let idx=this.state.people.findIndex(x=>normalize(x.normalized_name||x.display_name)===key);const value={...clone(person),normalized_name:key,last_seen_at:person.last_seen_at||nowIso(),first_seen_at:person.first_seen_at||(idx>=0?this.state.people[idx].first_seen_at:nowIso())};if(idx>=0)this.state.people[idx]={...this.state.people[idx],...value};else this.state.people.push(value);this.save();return clone(value)}
-    async upsertRelationship(rel){const key=`${normalize(rel.subject_name||rel.subject_person_id||'')}|${normalize(rel.target_label||'Paulo')}`;const value={...clone(rel),_key:key,updated_at:nowIso()};const idx=this.state.relationships.findIndex(x=>x._key===key);if(idx>=0)this.state.relationships[idx]=value;else this.state.relationships.push(value);this.save();return clone(value)}
+    async upsertRelationship(rel){const key=`${normalize(rel.subject_name||rel.subject_person_id||'')}|${normalize(rel.target_label||TARGET_LABEL)}`;const value={...clone(rel),target_label:rel.target_label||TARGET_LABEL,_key:key,updated_at:nowIso()};const idx=this.state.relationships.findIndex(x=>x._key===key);if(idx>=0)this.state.relationships[idx]=value;else this.state.relationships.push(value);this.save();return clone(value)}
     async listPeople(){return clone(this.state.people).map(person=>{const rel=this.state.relationships.find(r=>normalize(r.subject_name||r.subject_person_id||'')===normalize(person.display_name||person.name));return {...person,relationship:rel?.relationship_type||person.relationship||null}})}
     async findPerson(name){const key=normalize(name);const list=await this.listPeople();return list.find(p=>normalize(p.display_name||p.name)===key)||null}
     async upsertProject(project){const key=normalize(project.project_key||project.id||project.name);const idx=this.state.projects.findIndex(x=>normalize(x.project_key||x.id||x.name)===key);const value={...clone(project),project_key:key};if(idx>=0)this.state.projects[idx]={...this.state.projects[idx],...value};else this.state.projects.push(value);this.save();return clone(value)}
@@ -94,7 +95,7 @@
     }
     async remember(input={}){const curated=this.curator.evaluate(input);if(!curated.persist)return {status:'skipped',curated};const record={memory_type:curated.type,content_text:curated.text,content_json:clone(input.data||{}),importance:curated.importance,fingerprint:curated.fingerprint,source:input.source||'conversation',project_id:input.projectId||null,person_id:input.personId||null};const value=await this.call('upsertMemory',[record]);if(this.fallback&&this.primary)await this.fallback.upsertMemory(record).catch(()=>{});return {status:'stored',curated,value}}
     async recall(query,{limit=8,minScore=.22}={}){const list=await this.call('listMemories',[]);return list.map(memory=>({...memory,_score:relevanceScore(query,memory)})).filter(x=>x._score>=minScore).sort((a,b)=>b._score-a._score).slice(0,Math.max(1,limit))}
-    async rememberPerson(person={}){const display=String(person.display_name||person.name||'').trim();if(!display)throw new Error('person_name_required');const value=await this.call('upsertPerson',[{...clone(person),display_name:display,normalized_name:normalize(display),source:person.source||'self-reported'}]);if(person.relationship){await this.call('upsertRelationship',[{subject_name:display,subject_person_id:value?.id||null,target_label:person.target_label||'Paulo',relationship_type:person.relationship,source:person.source||'self-reported'}]);}if(this.fallback&&this.primary){await this.fallback.upsertPerson({...person,display_name:display,normalized_name:normalize(display)}).catch(()=>{});if(person.relationship)await this.fallback.upsertRelationship({subject_name:display,target_label:person.target_label||'Paulo',relationship_type:person.relationship}).catch(()=>{})}return value}
+    async rememberPerson(person={}){const display=String(person.display_name||person.name||'').trim();if(!display)throw new Error('person_name_required');const value=await this.call('upsertPerson',[{...clone(person),display_name:display,normalized_name:normalize(display),source:person.source||'self-reported'}]);if(person.relationship){await this.call('upsertRelationship',[{subject_name:display,subject_person_id:value?.id||null,target_label:person.target_label||TARGET_LABEL,relationship_type:person.relationship,source:person.source||'self-reported'}]);}if(this.fallback&&this.primary){await this.fallback.upsertPerson({...person,display_name:display,normalized_name:normalize(display)}).catch(()=>{});if(person.relationship)await this.fallback.upsertRelationship({subject_name:display,target_label:person.target_label||TARGET_LABEL,relationship_type:person.relationship}).catch(()=>{})}return value}
     async listPeople(){return this.call('listPeople',[])}
     async findPerson(name){return this.call('findPerson',[name])}
     async rememberProject(project){return this.call('upsertProject',[project])}
@@ -106,9 +107,9 @@
   function migrateLegacyPeople(storage){
     try{
       const legacy=JSON.parse(storage?.getItem?.('pink_people_memory_v1')||'{}');
-      return Object.values(legacy||{}).map(item=>({display_name:item.name,relationship:item.relationship||null,source:item.source||'self-reported',first_seen_at:item.firstSeenAt,last_seen_at:item.lastSeenAt})).filter(x=>x.display_name);
+      return Object.values(legacy||{}).map(item=>({display_name:item.name,relationship:item.relationship||null,target_label:TARGET_LABEL,source:item.source||'self-reported',first_seen_at:item.firstSeenAt,last_seen_at:item.lastSeenAt})).filter(x=>x.display_name);
     }catch(_){return []}
   }
 
-  return Object.freeze({version:'4.0.0',normalize,tokens,fingerprint,redactSecrets,relevanceScore,MemoryCurator,LocalMemoryAdapter,MemoryService,migrateLegacyPeople});
+  return Object.freeze({version:'4.1.0',TARGET_LABEL,normalize,tokens,fingerprint,redactSecrets,relevanceScore,MemoryCurator,LocalMemoryAdapter,MemoryService,migrateLegacyPeople});
 });
