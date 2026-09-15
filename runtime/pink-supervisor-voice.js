@@ -1,7 +1,8 @@
-// Pink Supervisor Voice Runtime — STT -> Speaker -> Memory/Context -> Unified Pink Brain -> TTS.
+// Pink Supervisor Voice Runtime — low-latency STT -> Speaker -> Memory/Context -> Unified Pink Brain -> TTS.
 (() => {
   'use strict';
   const $=s=>document.querySelector(s);
+  const MEMORY_TIMEOUT_MS=900;
   let recognition=null,active=false,speaking=false,starting=false,lastProvider='nvidia';
   const history=[];
 
@@ -25,26 +26,28 @@
   }
   async function memoryContext(query){
     try{
-      const memories=await window.PinkMemoryCloud?.recall?.(query,{limit:10,minScore:.16})||[];
-      if(!memories.length)return '';
+      const recall=Promise.resolve(window.PinkMemoryCloud?.recall?.(query,{limit:6,minScore:.18})||[]);
+      const memories=await Promise.race([recall,new Promise(resolve=>setTimeout(()=>resolve([]),MEMORY_TIMEOUT_MS))]);
+      if(!Array.isArray(memories)||!memories.length)return '';
       return memories.map((m,i)=>`${i+1}. [${m.memory_type||m.type||'memory'}] ${m.content_text||m.text||''}`).filter(Boolean).join('\n');
     }catch(_){return ''}
   }
-  async function askBrain(prompt){
+  async function askBrain(prompt,{complex=false,memoryQuery=null}={}){
     const cfg=window.PinkPublicConfig?.supabase||{};
     if(!cfg.url||!cfg.anonKey)throw new Error('pink_brain_config_missing');
-    const memory=await memoryContext(prompt);
+    const memoryPromise=memoryContext(memoryQuery||prompt);
     const activeProject=window.PinkOperatingCore?.snapshot?.().awareness?.activeProject||window.PinkCore?.activeProject||null;
     const speakerContext=window.PinkSpeakerIdentity?.context?.()||'Pessoa falando: não identificada.';
+    const memory=await memoryPromise;
     const input=[speakerContext,activeProject?`Projeto ativo: ${activeProject}`:'',memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
     const endpoint=`${String(cfg.url).replace(/\/$/,'')}/functions/v1/pink-brain`;
-    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input,reasoningEffort:'medium',thinkingLevel:'high',maxOutputTokens:1800})});
+    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input,reasoningEffort:complex?'medium':'low',maxOutputTokens:complex?1400:900})});
     const payload=await response.json().catch(()=>({}));
     if(!response.ok||!payload?.ok){const attempts=Array.isArray(payload?.attempts)?payload.attempts.map(x=>`${x.provider}:${x.error||x.status}`).join(' | '):'';throw new Error(payload?.message||payload?.error||attempts||`Pink Brain HTTP ${response.status}`)}
     const reply=String(payload.reply||'').trim();if(!reply)throw new Error('pink_brain_empty_output');
     lastProvider=payload.provider||'pink-brain';render();
     const speaker=window.PinkSpeakerIdentity?.current?.()||null;
-    try{window.PinkMemoryCloud?.remember?.({type:'conversation',text:`Pessoa: ${speaker?.name||'não identificada'}\nPergunta: ${prompt}\nResposta: ${reply}`,importance:.5,source:`pink-brain:${lastProvider}`,data:{speaker:speaker?.name||null,role:speaker?.role||null,provider:lastProvider,model:payload.model||null}}).catch(()=>{})}catch(_){}
+    try{window.PinkMemoryCloud?.remember?.({type:'conversation',text:`Pessoa: ${speaker?.name||'não identificada'}\nPergunta: ${memoryQuery||prompt}\nResposta: ${reply}`,importance:.5,source:`pink-brain:${lastProvider}`,data:{speaker:speaker?.name||null,role:speaker?.role||null,provider:lastProvider,model:payload.model||null}}).catch(()=>{})}catch(_){}
     return {reply,provider:lastProvider,model:payload.model||null,usage:payload.usage||null,attempts:payload.attempts||[]};
   }
   function speak(text){
@@ -52,10 +55,15 @@
       const value=String(text||'').trim();if(!value){resolve();return}
       if(!window.speechSynthesis){resolve();return}
       speaking=true;try{recognition?.stop?.()}catch(_){}window.speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(value);u.lang='pt-BR';u.rate=.98;u.pitch=1.02;
+      const u=new SpeechSynthesisUtterance(value);u.lang='pt-BR';u.rate=1.02;u.pitch=1.02;
       const voices=window.speechSynthesis.getVoices?.()||[];u.voice=voices.find(v=>/^pt-BR$/i.test(v.lang))||voices.find(v=>/^pt/i.test(v.lang))||null;
-      u.onstart=()=>state('speaking');u.onend=u.onerror=()=>{speaking=false;if(active){state('listening');setTimeout(()=>{try{recognition?.start?.()}catch(_){}},250)}resolve()};window.speechSynthesis.speak(u);
+      u.onstart=()=>state('speaking');u.onend=u.onerror=()=>{speaking=false;if(active){state('listening');setTimeout(()=>{try{recognition?.start?.()}catch(_){}},180)}resolve()};window.speechSynthesis.speak(u);
     });
+  }
+  function shouldExecuteOperational(plan){
+    if(!plan?.steps?.length)return false;
+    // Fast path: AI-only intents go straight to Pink Brain. This avoids two model calls for one user request.
+    return plan.steps.every(step=>step.kind==='tool');
   }
   async function handle(text){
     const q=String(text||'').trim();if(!q)return;add('user',q);state('thinking');
@@ -67,12 +75,14 @@
       }
       window.PinkCore?.handleUserSpeech?.(q);
       const operational=window.PinkIntentRouter?.plan?.(q,{activeProject:window.PinkOperatingCore?.snapshot?.().awareness?.activeProject||null});
-      let result=null;if(operational&&window.PinkIntentRouter?.execute){try{result=await window.PinkIntentRouter.execute(operational)}catch(_){} }
-      const opText=result&&result.status==='completed'?`\n\nResultado operacional verificado:\n${JSON.stringify(result).slice(0,5000)}`:'';
-      const recent=history.slice(-6).map(x=>`${x.role}: ${x.content}`).join('\n');
-      const response=await askBrain(`${recent?`Histórico recente:\n${recent}\n\n`:''}Pergunta atual: ${q}${opText}`);
+      let result=null;
+      if(shouldExecuteOperational(operational)&&window.PinkIntentRouter?.execute){try{result=await window.PinkIntentRouter.execute(operational)}catch(_){} }
+      const opText=result&&result.status==='completed'?`\n\nResultado operacional verificado:\n${JSON.stringify(result).slice(0,3500)}`:result&&result.status==='needs_approval'?`\n\nAção operacional aguardando aprovação do Ricardo.`:'';
+      const recent=history.slice(-4).map(x=>`${x.role}: ${x.content}`).join('\n');
+      const complex=['research','knowledge','software_change','optimization'].includes(operational?.intent);
+      const response=await askBrain(`${recent?`Histórico recente:\n${recent}\n\n`:''}Pergunta atual: ${q}${opText}`,{complex,memoryQuery:q});
       const reply=response.reply||'Não encontrei uma resposta disponível.';
-      history.push({role:'user',content:q},{role:'assistant',content:reply});while(history.length>12)history.shift();
+      history.push({role:'user',content:q},{role:'assistant',content:reply});while(history.length>10)history.shift();
       try{const gatewayId=response.provider==='nvidia'?'nvidia-nemotron':response.provider;window.PinkAIGateway?.mark?.(gatewayId,'healthy',{lastUsedAt:new Date().toISOString(),model:response.model||null})}catch(_){}
       add('assistant',reply);await speak(reply);
     }catch(error){
@@ -88,7 +98,7 @@
     recognition=new C();recognition.lang='pt-BR';recognition.continuous=true;recognition.interimResults=false;
     recognition.onresult=e=>{for(let i=e.resultIndex;i<e.results.length;i++)if(e.results[i].isFinal)handle(e.results[i][0].transcript)};
     recognition.onerror=e=>{if(['aborted','no-speech'].includes(e.error))return;window.PinkEvolution?.recordIssue?.('speech-recognition',e.error)};
-    recognition.onend=()=>{if(active&&!speaking)setTimeout(()=>{try{recognition.start()}catch(_){}},300)};
+    recognition.onend=()=>{if(active&&!speaking)setTimeout(()=>{try{recognition.start()}catch(_){}},220)};
     try{recognition.start()}catch(_){}active=true;starting=false;render();state('listening');$('#wakeGate')?.setAttribute('hidden','');
   }
   function stop(){active=false;starting=false;speaking=false;try{recognition?.stop?.()}catch(_){}recognition=null;window.speechSynthesis?.cancel?.();render();state('idle')}
