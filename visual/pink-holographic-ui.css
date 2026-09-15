@@ -1,4 +1,4 @@
-/* Pink Phase 3.4.2 — contextual holographic HUD and mode transitions. */
+/* Pink Phase 3.4.3 — contextual holographic HUD and mode transitions. */
 .pink-stage{isolation:isolate}
 .pink-hud{
   --hud-cyan:rgba(111,226,255,.82);
@@ -68,6 +68,15 @@
 .pink-stage[data-state="speaking"] .pink-hud{--hud-cyan:rgba(255,112,188,.88)}
 .pink-stage[data-state="executing"] .pink-hud{--hud-cyan:rgba(102,226,255,.9)}
 .pink-stage[data-state="error"] .pink-hud{--hud-cyan:rgba(255,116,144,.88)}
+
+/* Orb console owns the visual state area. Never stack the legacy HUD over it. */
+.pink-stage.pink-orb-screen>.pink-hud{display:none!important}
+.pink-stage.pink-orb-screen>.portrait,
+.pink-stage.pink-orb-screen>.eyelid,
+.pink-stage.pink-orb-screen>.lip-sync,
+.pink-stage.pink-orb-screen>.voice-signature,
+.pink-stage.pink-orb-screen>.state-pill,
+.pink-stage.pink-orb-screen>.voice-pulse{display:none!important}
 
 .workspace[data-pink-mode="pink-only"]{
   grid-template-columns:minmax(0,1fr)!important;
