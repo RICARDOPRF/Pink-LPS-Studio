@@ -1,11 +1,12 @@
 // Pink Phase 4 — bridge legacy PinkCore memory to selective cloud memory.
 (() => {
+  const TARGET_LABEL='Ricardo';
   const RELATIONS=['namorada','namorado','esposa','marido','noiva','noivo','companheira','companheiro','amiga','amigo','irmã','irma','irmão','irmao','mãe','mae','pai','filha','filho','prima','primo','tia','tio','colega','sócia','socia','sócio','socio','chefe','gestor','gestora'];
   const normalize=value=>String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
   const pretty=name=>String(name||'').trim().split(/\s+/).filter(Boolean).map(x=>x.charAt(0).toUpperCase()+x.slice(1).toLowerCase()).join(' ');
   function extractName(text=''){
-    const m=String(text).match(/\b(?:eu\s+sou|meu\s+nome\s+(?:é|e)|me\s+chamo)\s+(?:a|o)?\s*([A-Za-zÀ-ÿ'’-]+)(?:\s+([A-Za-zÀ-ÿ'’-]+))?/i);if(!m)return null;
-    const stop=new Set(RELATIONS.map(normalize).concat(['do','da','de','e','sou']));const second=m[2]&&!stop.has(normalize(m[2]))?m[2]:'';return pretty([m[1],second].filter(Boolean).join(' '));
+    const m=String(text).match(/\b(?:eu\s+sou|meu\s+nome\s+(?:é|e)|me\s+chamo|aqui\s+é|aqui\s+e|quem\s+fala\s+(?:é|e)|quem\s+está\s+falando\s+(?:é|e)|quem\s+esta\s+falando\s+(?:é|e)|agora\s+quem\s+está\s+falando\s+(?:é|e)|agora\s+quem\s+esta\s+falando\s+(?:é|e))\s+(?:a|o)?\s*([A-Za-zÀ-ÿ'’-]+)(?:\s+([A-Za-zÀ-ÿ'’-]+))?/i);if(!m)return null;
+    const stop=new Set(RELATIONS.map(normalize).concat(['do','da','de','e','sou','dele','dela']));const second=m[2]&&!stop.has(normalize(m[2]))?m[2]:'';return pretty([m[1],second].filter(Boolean).join(' '));
   }
   function extractRelationship(text=''){
     const n=normalize(text);return RELATIONS.find(r=>new RegExp(`\\b${normalize(r)}\\b`,'i').test(n))||null;
@@ -37,8 +38,8 @@
       const spoken=String(text).trim();
       try{
         const name=extractName(spoken),relationship=extractRelationship(spoken);const pending=sessionStorage.getItem('pink_pending_person_v1')||'';
-        if(name)window.PinkMemoryCloud?.people?.remember?.({name,relationship,source:'self-reported'}).catch(()=>{});
-        else if(pending&&relationship)window.PinkMemoryCloud?.people?.remember?.({name:pending,relationship,source:'self-reported'}).catch(()=>{});
+        if(name&&relationship)window.PinkMemoryCloud?.people?.remember?.({name,relationship,target_label:TARGET_LABEL,source:'self-reported'}).catch(()=>{});
+        else if(pending&&relationship)window.PinkMemoryCloud?.people?.remember?.({name:pending,relationship,target_label:TARGET_LABEL,source:'self-reported'}).catch(()=>{});
         const candidate=memoryCandidate(spoken);if(candidate)window.PinkMemoryCloud?.remember?.({...candidate,source:'voice'}).catch(()=>{});
       }catch(_){ }
       return original(spoken);
@@ -48,4 +49,5 @@
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
   window.addEventListener('pinkfoundation:ready',install,{once:true});
+  window.PinkMemoryBridge={TARGET_LABEL,RELATIONS,extractName,extractRelationship};
 })();
