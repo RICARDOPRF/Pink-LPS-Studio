@@ -2,7 +2,7 @@ import { createPinkNextRuntime } from '../../packages/next-runtime/index.mjs';
 import { MemoryLayer } from '../../packages/contracts/index.mjs';
 
 const config = globalThis.PinkPublicConfig || {};
-const runtime = createPinkNextRuntime({ config, storage: globalThis.localStorage });
+const runtime = createPinkNextRuntime({ config, storage: globalThis.localStorage, satelliteStorage: globalThis.sessionStorage });
 globalThis.PinkNext = runtime;
 
 const $ = (s) => document.querySelector(s);
@@ -15,14 +15,28 @@ const modeToggle = $('#mode-toggle');
 const productionCloudAllowed = location.origin === 'https://ricardoprf.github.io';
 let lastReply = '';
 let lastProvider = '';
+let currentView = 'home';
+let satelliteProbe = null;
+let satelliteMessage = '';
+let satelliteOutput = null;
+let satelliteImage = null;
+let pendingSatelliteApproval = null;
 
 function chip(label, ok = true) { return `<span class="chip ${ok ? 'ok' : ''}">${label}</span>`; }
-function badge(state) { const ok = ['available','completed','running'].includes(state); return `<span class="badge ${ok ? 'ok' : 'warn'}">${state}</span>`; }
+function badge(state) { const ok = ['available','completed','running'].includes(state); return `<span class="badge ${ok ? 'ok' : 'warn'}">${escapeHtml(state)}</span>`; }
 
 function renderHealth() {
   const caps = runtime.tools.list();
   const available = caps.filter((c) => c.state === 'available').length;
-  health.innerHTML = [chip('NEXT runtime'), chip(`${available}/${caps.length} capabilities`, available > 0), chip(runtime.cloud.configured ? 'Cloud adapters' : 'Cloud offline', runtime.cloud.configured), chip('Approval Gate'), chip('Legacy safe')].join('');
+  const sat = runtime.satellite.snapshot();
+  health.innerHTML = [
+    chip('NEXT runtime'),
+    chip(`${available}/${caps.length} capabilities`, available > 0),
+    chip(runtime.cloud.configured ? 'Cloud adapters' : 'Cloud offline', runtime.cloud.configured),
+    chip(sat.paired ? 'Satellite conectado' : 'Satellite offline', sat.paired),
+    chip('Approval Gate'),
+    chip('Legacy safe')
+  ].join('');
 }
 
 function renderTasks() {
@@ -31,11 +45,46 @@ function renderTasks() {
 }
 
 function replyPanel() {
-  if (!lastReply) return '<article class="panel"><h2>Pink</h2><p class="metric-sub">O cérebro existente será acessado por adapter apenas em produção. Testes locais não escrevem nem chamam provedores.</p></article>';
+  if (!lastReply) return '<article class="panel"><h2>Pink</h2><p class="metric-sub">O cérebro existente é acessado por adapter. Credenciais privadas continuam no backend.</p></article>';
   return `<article class="panel"><h2>Pink · ${escapeHtml(lastProvider || 'brain')}</h2><p class="assistant-reply">${escapeHtml(lastReply)}</p></article>`;
 }
 
-function renderDashboard(view = 'home') {
+function satellitePanel() {
+  const state = runtime.satellite.snapshot();
+  const device = state.device || satelliteProbe;
+  const capabilities = device?.capabilities || [];
+  const rows = capabilities.length ? capabilities.map((cap) => `<div class="row"><span>${escapeHtml(cap.title || cap.id)}</span><span>${badge(cap.state || 'unknown')} <span class="badge">${escapeHtml(cap.risk || '')}</span></span></div>`).join('') : '<div class="metric-sub">Inicie o Pink Satellite no Windows e clique em “Detectar”.</div>';
+  const output = satelliteOutput ? `<pre class="sat-output">${escapeHtml(JSON.stringify(satelliteOutput, null, 2))}</pre>` : '';
+  const image = satelliteImage ? `<img class="sat-image" alt="Captura autorizada da tela" src="data:${escapeHtml(satelliteImage.mime)};base64,${satelliteImage.base64}">` : '';
+  const approval = pendingSatelliteApproval ? `<div class="sat-approval"><strong>Aprovação local necessária</strong><p>Veja o código exibido na janela do Pink Satellite e digite abaixo.</p><div class="sat-form"><input id="sat-approval-code" inputmode="numeric" maxlength="6" placeholder="Código local"><button id="sat-approval-confirm" type="button">Confirmar</button></div></div>` : '';
+  const paired = state.paired;
+  return `
+    <article class="panel satellite-card">
+      <h2>Pink Satellite Windows</h2>
+      <div class="metric">${paired ? 'ONLINE' : 'LOCAL'}</div>
+      <div class="metric-sub">${paired ? escapeHtml(device?.name || 'Dispositivo pareado') : 'Runtime local em 127.0.0.1:8777'}</div>
+      <div class="sat-form sat-pair">
+        <button id="sat-probe" type="button" class="ghost">Detectar</button>
+        ${paired ? '<button id="sat-disconnect" type="button" class="ghost">Desconectar</button>' : '<input id="sat-pair-code" inputmode="numeric" maxlength="6" placeholder="Código de pareamento"><button id="sat-pair" type="button">Parear</button>'}
+      </div>
+      ${satelliteMessage ? `<p class="sat-message">${escapeHtml(satelliteMessage)}</p>` : ''}
+    </article>
+    <article class="panel"><h2>Capabilities locais</h2><div class="list">${rows}</div></article>
+    <article class="panel">
+      <h2>Ações seguras</h2>
+      <div class="sat-actions">
+        <button id="sat-system" type="button" ${paired ? '' : 'disabled'}>Sistema</button>
+        <button id="sat-files" type="button" ${paired ? '' : 'disabled'}>Arquivos permitidos</button>
+        <button id="sat-screen" type="button" ${paired ? '' : 'disabled'}>Capturar tela</button>
+      </div>
+      <p class="metric-sub">Leitura comum é direta. Tela/câmera e ações com efeito exigem código local de aprovação. Terminal genérico permanece bloqueado.</p>
+      ${approval}${output}${image}
+    </article>
+    <article class="panel"><h2>Segurança local</h2><div class="list"><div class="row"><span>Listener</span><span class="badge ok">127.0.0.1</span></div><div class="row"><span>Sessão</span><span class="badge">efêmera</span></div><div class="row"><span>Arquivos de segredo</span><span class="badge warn">DENY</span></div><div class="row"><span>Terminal genérico</span><span class="badge warn">DENY</span></div></div></article>`;
+}
+
+function renderDashboard(view = currentView) {
+  currentView = view;
   const snapshot = runtime.snapshot();
   const caps = snapshot.capabilities;
   const available = caps.filter((c) => c.state === 'available');
@@ -47,19 +96,103 @@ function renderDashboard(view = 'home') {
     home: `
       <article class="panel"><h2>Task Runtime</h2><div class="metric">${snapshot.tasks.length}</div><div class="metric-sub">tarefas persistidas</div><div class="list">${taskRows}</div></article>
       <article class="panel"><h2>Capabilities</h2><div class="metric">${available.length}/${caps.length}</div><div class="metric-sub">verificáveis nesta sessão</div><div class="list">${capRows}</div></article>
+      <article class="panel"><h2>Satellite</h2><div class="metric">${snapshot.satellite?.paired ? 'ON' : 'OFF'}</div><div class="metric-sub">braços locais do Windows com pareamento e aprovação local</div></article>
       <article class="panel"><h2>Security</h2><div class="metric">HOST</div><div class="metric-sub">constraints e approvals são avaliados fora do modelo</div></article>
       <article class="panel"><h2>Evolution</h2><div class="metric">${evo.length}</div><div class="metric-sub">candidatos · código exige acordo humano + baseline</div></article>
       ${replyPanel()}`,
     tasks: `<article class="panel"><h2>Tarefas</h2><div class="list">${taskRows}</div></article><article class="panel"><h2>Continuação</h2><p class="metric-sub">Checkpoint, pause e resume pertencem ao Task Runtime — não ao histórico do chat.</p></article>${replyPanel()}`,
     memory: `<article class="panel"><h2>Memory V2</h2><div class="list">${Object.values(MemoryLayer).map((x)=>`<div class="row"><span>${x}</span><span class="badge">layer</span></div>`).join('')}</div></article><article class="panel"><h2>Context Compiler</h2><p class="metric-sub">A memória relevante é compilada de forma limitada. Evidência bruta permanece separada para drill-down.</p></article>`,
     skills: `<article class="panel"><h2>Skills</h2><div class="metric">${snapshot.skills.length}</div><div class="metric-sub">procedimentos reutilizáveis registrados</div></article><article class="panel"><h2>Tool Search</h2><p class="metric-sub">Capabilities são descobertas progressivamente; o cérebro não recebe o catálogo inteiro em todo turno.</p></article>`,
+    satellite: satellitePanel(),
     evolution: `<article class="panel"><h2>Autoevolução 2.0</h2><p class="metric-sub">Observe → trace → candidate → Dar de acordo → baseline → implementação → evals → A/B → Draft PR.</p></article><article class="panel"><h2>Gate</h2><div class="metric">HUMAN</div><div class="metric-sub">sem acordo: sem alteração de código. Sem aprovação final: sem produção.</div></article>`,
     security: `<article class="panel"><h2>Constraint Register</h2><div class="list"><div class="row"><span>Merge main automático</span><span class="badge warn">DENY</span></div><div class="row"><span>Publicação automática</span><span class="badge warn">DENY</span></div><div class="row"><span>Expor secrets</span><span class="badge warn">DENY</span></div><div class="row"><span>Enfraquecer auth/RLS</span><span class="badge warn">DENY</span></div></div></article><article class="panel"><h2>Trust Boundary</h2><p class="metric-sub">Conteúdo de web/MCP/tools é dado não confiável. O risco final é calculado pelo host.</p></article>`
   };
   dashboard.innerHTML = panels[view] || panels.home;
+  bindViewActions(view);
 }
 
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
+
+function setSatelliteMessage(message, output = null) {
+  satelliteMessage = String(message || '');
+  satelliteOutput = output;
+  renderHealth(); renderDashboard('satellite');
+}
+
+async function probeSatellite() {
+  try {
+    satelliteProbe = await runtime.satellite.probe();
+    setSatelliteMessage(`Satellite detectado: ${satelliteProbe.name || satelliteProbe.deviceId || 'dispositivo local'}`);
+  } catch (error) {
+    satelliteProbe = null;
+    setSatelliteMessage(`Satellite não detectado: ${String(error?.message || error)}`);
+  }
+}
+
+async function pairSatellite() {
+  const code = $('#sat-pair-code')?.value?.trim();
+  if (!code) return setSatelliteMessage('Digite o código de 6 dígitos exibido no Pink Satellite.');
+  try {
+    const device = await runtime.pairSatellite(code);
+    satelliteProbe = device;
+    setSatelliteMessage(`Pareado com ${device?.name || device?.deviceId || 'Pink Satellite'}.`);
+  } catch (error) {
+    setSatelliteMessage(`Pareamento recusado: ${String(error?.message || error)}`);
+  }
+}
+
+async function satelliteInvoke(capability, args = {}) {
+  try {
+    const result = await runtime.satellite.invoke(capability, args);
+    satelliteOutput = result?.result || result;
+    satelliteMessage = `${capability} concluído.`;
+    renderDashboard('satellite');
+    return result;
+  } catch (error) {
+    if (error?.status === 428 || error?.payload?.error === 'local_approval_required') {
+      const requested = await runtime.satellite.requestApproval(capability);
+      pendingSatelliteApproval = { capability, args, approvalId: requested.approvalId };
+      satelliteMessage = `Ação ${capability} aguarda aprovação local.`;
+      renderDashboard('satellite');
+      return null;
+    }
+    setSatelliteMessage(`${capability} falhou: ${String(error?.message || error)}`);
+    return null;
+  }
+}
+
+async function confirmSatelliteApproval() {
+  const code = $('#sat-approval-code')?.value?.trim();
+  if (!pendingSatelliteApproval || !code) return;
+  try {
+    const approved = await runtime.satellite.confirmApproval(pendingSatelliteApproval.approvalId, code);
+    const pending = pendingSatelliteApproval;
+    pendingSatelliteApproval = null;
+    const response = await runtime.satellite.invoke(pending.capability, pending.args, { approvalToken: approved.approvalToken, timeoutMs: 20_000 });
+    if (pending.capability === 'screen.capture' && response?.result?.base64) {
+      satelliteImage = response.result;
+      satelliteOutput = { capability: pending.capability, bytes: response.result.bytes, mime: response.result.mime };
+    } else {
+      satelliteOutput = response?.result || response;
+    }
+    satelliteMessage = `${pending.capability} autorizado localmente e concluído.`;
+    renderDashboard('satellite');
+  } catch (error) {
+    pendingSatelliteApproval = null;
+    setSatelliteMessage(`Aprovação/execução falhou: ${String(error?.message || error)}`);
+  }
+}
+
+function bindViewActions(view) {
+  if (view !== 'satellite') return;
+  $('#sat-probe')?.addEventListener('click', probeSatellite);
+  $('#sat-pair')?.addEventListener('click', pairSatellite);
+  $('#sat-disconnect')?.addEventListener('click', () => { runtime.disconnectSatellite(); satelliteMessage = 'Satellite desconectado desta sessão do navegador.'; satelliteOutput = null; satelliteImage = null; pendingSatelliteApproval = null; renderHealth(); renderDashboard('satellite'); });
+  $('#sat-system')?.addEventListener('click', () => satelliteInvoke('system.snapshot'));
+  $('#sat-files')?.addEventListener('click', () => satelliteInvoke('files.list'));
+  $('#sat-screen')?.addEventListener('click', () => satelliteInvoke('screen.capture'));
+  $('#sat-approval-confirm')?.addEventListener('click', confirmSatelliteApproval);
+}
 
 async function executePrompt() {
   const goal = prompt.value.trim(); if (!goal) return;
@@ -102,4 +235,5 @@ modeToggle.addEventListener('click', () => {
   shell.dataset.mode = next; modeToggle.textContent = next === 'pink-only' ? 'Command Center' : 'Pink Only';
 });
 
+runtime.restoreSatellite().finally(() => { renderHealth(); if (currentView === 'satellite') renderDashboard('satellite'); });
 renderHealth(); renderTasks(); renderDashboard();
