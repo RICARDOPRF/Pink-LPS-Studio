@@ -68,8 +68,12 @@ jobs:
           find packages apps/next -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - name: Local Companion syntax and safety self-test
         run: |
-          python -m py_compile companion/local_voice_service.py
+          python -m py_compile companion/local_voice_service.py companion/satellite_service.py
           python companion/local_voice_service.py --self-test
+          python companion/satellite_service.py --self-test
+          python tests/satellite-service-security.py
+      - name: Pink Satellite browser client contracts
+        run: node tests/satellite-client.mjs
       - name: Foundation safety contracts
         run: node tests/foundation-safety.cjs
       - name: Human confirmation and undo contracts
@@ -114,6 +118,35 @@ jobs:
         run: node tests/pink-next-contracts.mjs
       - name: Pink Next behavioral evals
         run: node tests/pink-next-behavioral.mjs
+
+  satellite-windows:
+    needs: runtime-checks
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Build and packaged self-test
+        shell: powershell
+        run: ./companion/build-pink-satellite.ps1 -Python python -Clean
+      - name: Installer smoke
+        shell: powershell
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP 'PinkLPS'
+          ./companion/install-pink-satellite.ps1 -ExePath ./dist/PinkSatellite.exe -AllowedRoot $root
+          $installed = Join-Path $env:LOCALAPPDATA 'PinkLPS\Satellite\PinkSatellite.exe'
+          if (-not (Test-Path $installed)) { throw 'Installed PinkSatellite.exe missing' }
+          & $installed --self-test
+      - name: Upload Windows executable
+        uses: actions/upload-artifact@v4
+        with:
+          name: PinkSatellite-Windows-x64
+          path: dist/PinkSatellite.exe
+          if-no-files-found: error
+          retention-days: 14
+
   browser-smoke:
     needs: runtime-checks
     runs-on: ubuntu-latest
