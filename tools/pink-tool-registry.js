@@ -2,15 +2,17 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;if(typeof window!=='undefined')root.PinkTools=api})(typeof window!=='undefined'?window:globalThis,function(){
 'use strict';
 const RISKS=new Set(['READ_ONLY','REVERSIBLE','EXTERNAL_WRITE','DESTRUCTIVE','PRODUCTION']);
+const READ_CAPABILITY=/(?:^|\.)(?:read|search|list|health|metrics|catalog|sales|open|query|snapshot|status)$/i;
 const clone=v=>v==null?v:JSON.parse(JSON.stringify(v));
+function capabilityRisk(item={},capability=''){const explicit=item.capabilityRisks?.[capability];if(RISKS.has(explicit))return explicit;if(READ_CAPABILITY.test(String(capability)))return 'READ_ONLY';return RISKS.has(item.risk)?item.risk:'READ_ONLY'}
 class ToolRegistry{
  constructor(){this.tools=new Map()}
- register(meta={}){if(!meta.name)throw new Error('tool_name_required');if(!RISKS.has(meta.risk||'READ_ONLY'))throw new Error('tool_risk_invalid');const previous=this.tools.get(meta.name)||{};const item={capabilities:[],read:true,write:false,auth:'external',health:'unknown',timeoutMs:15000,audit:true,adapter:null,...previous,...clone(meta)};this.tools.set(item.name,item);return this.public(item)}
+ register(meta={}){if(!meta.name)throw new Error('tool_name_required');if(!RISKS.has(meta.risk||'READ_ONLY'))throw new Error('tool_risk_invalid');const previous=this.tools.get(meta.name)||{};const item={capabilities:[],capabilityRisks:{},read:true,write:false,auth:'external',health:'unknown',timeoutMs:15000,audit:true,adapter:null,...previous,...clone(meta)};this.tools.set(item.name,item);return this.public(item)}
  attach(name,adapter,health='healthy'){const item=this.tools.get(name);if(!item)throw new Error(`tool_unknown:${name}`);item.adapter=adapter;item.health=health;return this.public(item)}
  public(item){const {adapter,...rest}=item;return clone(rest)}
  get(name){const item=this.tools.get(name);return item?this.public(item):null}
  list(){return [...this.tools.values()].map(x=>this.public(x))}
- async invoke(name,capability,args={},context={}){const item=this.tools.get(name);if(!item)return {status:'blocked_external',reason:`tool_unknown:${name}`};if(!item.capabilities.includes(capability))return {status:'failed',reason:`capability_not_declared:${capability}`};if(item.write&&['EXTERNAL_WRITE','DESTRUCTIVE','PRODUCTION'].includes(item.risk)&&!context.approved)return {status:'needs_approval',tool:name,capability,risk:item.risk};if(!item.adapter||typeof item.adapter.invoke!=='function')return {status:'blocked_external',reason:`tool_adapter_unavailable:${name}`};try{const result=await Promise.race([Promise.resolve(item.adapter.invoke(capability,args,context)),new Promise((_,reject)=>setTimeout(()=>reject(new Error('tool_timeout')),item.timeoutMs))]);item.health='healthy';return {status:'completed',tool:name,capability,result}}catch(error){item.health='degraded';return {status:'failed',tool:name,capability,error:String(error?.message||error)}}}
+ async invoke(name,capability,args={},context={}){const item=this.tools.get(name);if(!item)return {status:'blocked_external',reason:`tool_unknown:${name}`};if(!item.capabilities.includes(capability))return {status:'failed',reason:`capability_not_declared:${capability}`};const risk=capabilityRisk(item,capability);if(risk!=='READ_ONLY'&&!context.approved)return {status:'needs_approval',tool:name,capability,risk};if(!item.adapter||typeof item.adapter.invoke!=='function')return {status:'blocked_external',reason:`tool_adapter_unavailable:${name}`};try{const result=await Promise.race([Promise.resolve(item.adapter.invoke(capability,args,{...context,risk})),new Promise((_,reject)=>setTimeout(()=>reject(new Error('tool_timeout')),item.timeoutMs))]);item.health='healthy';return {status:'completed',tool:name,capability,risk,result}}catch(error){item.health='degraded';return {status:'failed',tool:name,capability,risk,error:String(error?.message||error)}}}
 }
 class ProjectDiscovery{
  constructor(registry){this.registry=registry}
@@ -44,5 +46,5 @@ function attachBrowser(){if(typeof window==='undefined')return;
 }
 attachBrowser();
 const projects=new ProjectDiscovery(registry);
-return {version:'7.0.0',registry,projects,registerTool:m=>registry.register(m),attach:(n,a,h)=>registry.attach(n,a,h),invoke:(n,c,a,ctx)=>registry.invoke(n,c,a,ctx),resolveProject:(q,c)=>projects.resolve(q,c),snapshot:()=>({version:'7.0.0',tools:registry.list(),knownProjects:projects.known()})};
+return {version:'7.1.0',registry,projects,ToolRegistry,capabilityRisk,registerTool:m=>registry.register(m),attach:(n,a,h)=>registry.attach(n,a,h),invoke:(n,c,a,ctx)=>registry.invoke(n,c,a,ctx),resolveProject:(q,c)=>projects.resolve(q,c),snapshot:()=>({version:'7.1.0',tools:registry.list(),knownProjects:projects.known()})};
 });
