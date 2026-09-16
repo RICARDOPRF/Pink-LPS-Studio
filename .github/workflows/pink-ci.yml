@@ -37,6 +37,7 @@ jobs:
           node --check agents/pink-unified-ai-gateway.js
           node --check agents/pink-model-router.js
           node --check runtime/pink-agent-harness.js
+          node --check runtime/pink-capability-awareness.js
           node --check runtime/pink-supervisor-voice.js
           node --check voice/pink-gemini-live.js
           node --check vision/pink-vision.js
@@ -79,6 +80,8 @@ jobs:
         run: node tests/tool-risk.cjs
       - name: Operational senses contracts
         run: node tests/operational-senses.cjs
+      - name: V15 capability awareness contracts
+        run: node tests/capability-awareness.cjs
       - name: Core intelligence contracts
         run: node tests/core-intelligence.cjs
       - name: Unified AI Gateway contracts
@@ -124,3 +127,5 @@ jobs:
         run: npx playwright@1.63.0 install --with-deps chromium
       - name: Desktop and mobile browser smoke
         run: node tests/browser-smoke.cjs
+      - name: V15 capability awareness browser smoke
+        run: node tests/capability-awareness-browser.cjs

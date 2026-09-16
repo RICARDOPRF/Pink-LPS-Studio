@@ -8,6 +8,7 @@ class IntentContextRouter{
  constructor(){this.lastPlan=null}
  classify(text=''){
   const n=normalize(text);
+  if(/(o que (voce )?(consegue|pode)( fazer)?|quais (sao )?(suas )?(capacidades|ferramentas)|suas capacidades|suas ferramentas|voce (tem|possui) acesso|voce consegue|consegue acessar|pode acessar|tem acesso a)/.test(n))return 'capability_query';
   const cameraCapability=root.PinkCameraRouter?.classify?.(text)||null;
   if(cameraCapability)return 'camera';
   if(/(que horas|qual a hora|hora agora|horario agora|horario atual|que dia (e|é) hoje|qual a data|data de hoje|dia de hoje)/.test(n))return 'runtime_time';
@@ -30,7 +31,8 @@ class IntentContextRouter{
   const text=String(input||'').trim();if(!text)throw new Error('intent_input_required');
   const intent=this.classify(text);const project=this.resolveProject(text)||context.activeProject||this.activeProject()||null;
   const steps=[];let risk='READ_ONLY';
-  if(intent==='camera'){
+  if(intent==='capability_query')steps.push({kind:'tool',tool:'runtime-capabilities',capability:'capability.query',args:{request:text}});
+  else if(intent==='camera'){
     const capability=root.PinkCameraRouter?.classify?.(text)||'camera.status';
     steps.push({kind:'tool',tool:'camera',capability,args:{request:text,question:text}});
   }
@@ -71,8 +73,8 @@ class IntentContextRouter{
   const status=results.some(x=>x.result?.status==='needs_approval')?'needs_approval':results.some(x=>['failed','blocked_external','blocked'].includes(x.result?.status))?'blocked': 'completed';
   return {status,planId:plan.id,intent:plan.intent,project:plan.project,results};
  }
- snapshot(){return {version:'1.2.0',lastPlan:this.lastPlan}}
+ snapshot(){return {version:'1.3.0',lastPlan:this.lastPlan}}
 }
 const router=new IntentContextRouter();
-return {version:'1.2.0',router,plan:(i,c)=>router.plan(i,c),execute:(p,c)=>router.execute(p,c),snapshot:()=>router.snapshot()};
+return {version:'1.3.0',router,plan:(i,c)=>router.plan(i,c),execute:(p,c)=>router.execute(p,c),snapshot:()=>router.snapshot()};
 });

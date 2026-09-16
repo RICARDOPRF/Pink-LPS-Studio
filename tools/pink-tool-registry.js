@@ -36,6 +36,7 @@ const registry=new ToolRegistry();
 {name:'gestao-obras',risk:'READ_ONLY',read:true,write:false,auth:'runtime',capabilities:['project.search','project.list']},
 {name:'runtime-clock',risk:'READ_ONLY',read:true,write:false,auth:'device',capabilities:['time.current','date.current']},
 {name:'camera',risk:'READ_ONLY',read:true,write:false,auth:'browser-permission',capabilities:['camera.open','camera.close','camera.status','camera.observe']},
+{name:'runtime-capabilities',risk:'READ_ONLY',read:true,write:false,auth:'runtime',capabilities:['capability.query','capability.snapshot']},
 {name:'lps-website',risk:'READ_ONLY',read:true,write:false,auth:'public',capabilities:['open']},
 {name:'calculadora',risk:'READ_ONLY',read:true,write:false,auth:'public',capabilities:['open']},
 {name:'duoplanning',risk:'READ_ONLY',read:true,write:false,auth:'public',capabilities:['open']},
@@ -49,11 +50,12 @@ function clockSnapshot(){
 function attachBrowser(){if(typeof window==='undefined')return;
  registry.attach('runtime-clock',{invoke:async cap=>{const snap=clockSnapshot();if(cap==='time.current'||cap==='date.current')return snap;throw new Error('clock_capability_unavailable')}});
  if(window.PinkCameraRouter)registry.attach('camera',{invoke:(cap,args)=>window.PinkCameraRouter.invoke(cap,args)});
+ if(window.PinkCapabilityAwareness)registry.attach('runtime-capabilities',{invoke:(cap,args)=>window.PinkCapabilityAwareness.invoke(cap,args)});
  if(window.PinkPanelRouter)registry.attach('painel-router',{invoke:async(cap,args)=>{if(cap==='panel.open')return window.PinkCore?.openProject?.(args.project||args.id);if(cap==='panel.query'||cap==='project.metrics')return window.PinkCore?.queryMetrics?.(args.project||args.id,args.request);throw new Error('panel_capability_unavailable')}});
  if(window.PinkStoreRouter)registry.attach('store-router',{invoke:async(cap,args)=>{const s=window.PinkStoreRouter;if(cap==='store.sales')return s.getSales?.(args);if(cap==='store.catalog')return s.getCatalog?.(args);if(cap==='store.prepare-write')return s.prepareWrite?.(args);if(cap==='store.execute-write')return s.executeWrite?.(args);throw new Error('store_capability_unavailable')}});
 }
 attachBrowser();
-if(typeof window!=='undefined'){window.addEventListener('pinkplatform:modules-loaded',attachBrowser);window.addEventListener('pinkvision:state',attachBrowser)}
+if(typeof window!=='undefined'){window.addEventListener('pinkplatform:modules-loaded',attachBrowser);window.addEventListener('pinkvision:state',attachBrowser);window.addEventListener('pinkcapabilities:ready',attachBrowser)}
 const projects=new ProjectDiscovery(registry);
-return {version:'7.2.0',registry,projects,ToolRegistry,capabilityRisk,registerTool:m=>registry.register(m),attach:(n,a,h)=>registry.attach(n,a,h),invoke:(n,c,a,ctx)=>registry.invoke(n,c,a,ctx),resolveProject:(q,c)=>projects.resolve(q,c),snapshot:()=>({version:'7.2.0',tools:registry.list(),knownProjects:projects.known()})};
+return {version:'7.3.0',registry,projects,ToolRegistry,capabilityRisk,registerTool:m=>registry.register(m),attach:(n,a,h)=>registry.attach(n,a,h),invoke:(n,c,a,ctx)=>registry.invoke(n,c,a,ctx),resolveProject:(q,c)=>projects.resolve(q,c),snapshot:()=>({version:'7.3.0',tools:registry.list(),knownProjects:projects.known()})};
 });

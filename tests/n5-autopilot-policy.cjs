@@ -14,6 +14,8 @@ assert.strictEqual(policy.requirePullRequest, true);
 assert.strictEqual(policy.autoMergeWhenChecksPass, false, 'N5 must leave merge approval to Paulo');
 assert.match(workflow, /gh pr create[^\n]*--draft\b/, 'N5 must open a draft pull request');
 assert.doesNotMatch(workflow, /\bgh\s+pr\s+merge\b/, 'N5 must never merge a pull request automatically');
+assert.match(workflow,/node tests\/capability-awareness\.cjs/,'N5 must preserve V15 capability-awareness contracts');
+assert.match(workflow,/node tests\/capability-awareness-browser\.cjs/,'N5 must preserve V15 capability-awareness browser smoke');
 assert.match(autopilot,/runtimeEvolutionSignals\(\)/,'N5 must load real runtime evolution signals');
 assert.match(autopilot,/memory_type === 'evolution_signal'/,'N5 must filter cloud memory to evolution signals');
 assert.match(autopilot,/approvedForEvolution === true/,'N5 must only consume candidates explicitly approved for evolution');
