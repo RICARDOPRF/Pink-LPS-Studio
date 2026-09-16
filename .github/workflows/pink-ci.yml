@@ -74,6 +74,8 @@ jobs:
         run: node tests/n5-autopilot-policy.cjs
       - name: Independent audit safety boundaries
         run: node tests/audit-safety-boundaries.cjs
+      - name: Phase 5-11 safety and runtime contracts
+        run: node tests/phases-5-11-contracts.cjs
       - name: Memory and People Graph contracts
         run: node tests/memory-core.cjs
       - name: Presence lifecycle
