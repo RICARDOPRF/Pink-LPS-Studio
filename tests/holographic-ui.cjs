@@ -24,7 +24,7 @@ assert.match(css, /studio-panel\{display:none!important\}/, 'PINK ONLY must hide
 assert.match(css, /pink-hud-card/, 'HUD visual cards missing');
 assert.match(css, /prefers-reduced-motion/, 'reduced motion handling missing');
 
-assert.match(html, /pink-holographic-ui\.css\?v=3\.4\.2/, 'HUD styles not wired');
+assert.match(html, /pink-holographic-ui\.css\?v=3\.4\.3/, 'HUD styles not wired at current CSS version');
 assert.match(html, /pink-holographic-ui\.js\?v=3\.4\.2/, 'HUD runtime not wired');
 
 console.log('Pink holographic UI contract: OK');
