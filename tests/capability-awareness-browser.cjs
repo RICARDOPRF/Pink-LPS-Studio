@@ -5,6 +5,7 @@ const {chromium}=require('playwright');
 const port=4174,baseUrl=`http://127.0.0.1:${port}`;
 const server=spawn(process.execPath,['tests/static-server.cjs'],{stdio:['ignore','pipe','inherit'],env:{...process.env,PINK_TEST_PORT:String(port)}});
 function waitForServer(){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Pink V15 test server timeout')),8000);server.stdout.on('data',c=>{if(String(c).includes('Pink test server')){clearTimeout(timer);resolve()}});server.once('exit',code=>{clearTimeout(timer);if(code!==null&&code!==0)reject(new Error(`Pink V15 test server exited ${code}`))})})}
+function unwrap(value){let x=value;for(let i=0;i<8&&x&&typeof x==='object'&&x.status==='completed'&&Object.prototype.hasOwnProperty.call(x,'result');i++)x=x.result;return x}
 (async()=>{
   await waitForServer();
   const browser=await chromium.launch({headless:true});
@@ -25,8 +26,8 @@ function waitForServer(){return new Promise((resolve,reject)=>{const timer=setTi
     assert.strictEqual(result.cameraPlan.intent,'capability_query');
     assert.strictEqual(result.cameraPlan.steps[0].tool,'runtime-capabilities');
     assert.strictEqual(result.capabilityResult.status,'completed');
-    const direct=result.capabilityResult.results?.[0]?.result?.result?.reply||result.capabilityResult.results?.[0]?.result?.reply||'';
-    assert.match(String(direct),/câmera/i);
+    const direct=unwrap(result.capabilityResult.results?.[0]?.result);
+    assert.match(String(direct?.reply||''),/câmera/i);
     assert.strictEqual(result.imperativePlan.intent,'camera');
     assert.ok(result.snap.available.includes('runtime-clock'));
     assert.ok(result.snap.available.includes('camera'));
