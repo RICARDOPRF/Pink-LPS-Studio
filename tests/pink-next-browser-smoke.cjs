@@ -1,0 +1,33 @@
+'use strict';
+const assert=require('node:assert/strict');
+const {spawn}=require('node:child_process');
+const {chromium,devices}=require('playwright');
+const port=Number(process.env.PINK_TEST_PORT||4174),baseUrl=`http://127.0.0.1:${port}/apps/next/index.html`;
+const server=spawn(process.execPath,['tests/static-server.cjs'],{stdio:['ignore','pipe','inherit'],env:{...process.env,PINK_TEST_PORT:String(port)}});
+function waitForServer(){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Pink Next test server timeout')),8000);server.stdout.on('data',c=>{if(String(c).includes('Pink test server')){clearTimeout(timer);resolve()}});server.once('exit',code=>{clearTimeout(timer);if(code!==null&&code!==0)reject(new Error(`server exited ${code}`))})})}
+async function smoke(browser,name,options){
+  const context=await browser.newContext(options),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e?.message||e)));
+  await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:20000});
+  await page.waitForFunction(()=>Boolean(window.PinkNext?.snapshot),null,{timeout:10000});
+  assert.match(await page.title(),/Pink LPS Studio Next/i);
+  assert.ok(await page.locator('#pink-stage').isVisible(),`${name}: Pink stage hidden`);
+  assert.ok(await page.locator('#prompt').isVisible(),`${name}: composer hidden`);
+  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.equal(overflow,true,`${name}: horizontal overflow`);
+  await page.locator('#prompt').fill('Pesquise na web e valide evidências do projeto Pink');
+  await page.locator('#send').click();
+  await page.waitForFunction(()=>window.PinkNext.taskRuntime.list().length>=1);
+  const task=await page.evaluate(()=>window.PinkNext.taskRuntime.list().at(-1));
+  assert.equal(task.status,'running');assert.ok(task.plan.length>=3);
+  const constraint=await page.evaluate(()=>window.PinkNext.security.constraints.evaluate('deploy to production'));
+  assert.equal(constraint.allowed,false);
+  const capabilities=await page.evaluate(()=>window.PinkNext.tools.list());
+  assert.ok(capabilities.some(x=>x.id==='ai.nvidia'));
+  assert.ok(capabilities.some(x=>x.id==='memory.cloud'));
+  if(name==='desktop'){
+    await page.locator('#mode-toggle').click();assert.equal(await page.locator('.app-shell').getAttribute('data-mode'),'pink-only');
+    assert.equal(await page.locator('.inspector').isVisible(),false);await page.locator('#mode-toggle').click();
+  }
+  const fatal=errors.filter(e=>!/ResizeObserver loop/i.test(e));assert.deepEqual(fatal,[],`${name}: ${fatal.join(' | ')}`);
+  console.log(`Pink Next browser smoke ${name}: PASS`);await context.close();
+}
+(async()=>{await waitForServer();const browser=await chromium.launch({headless:true});try{await smoke(browser,'desktop',{viewport:{width:1440,height:900}});await smoke(browser,'mobile',{...devices['iPhone 14']})}finally{await browser.close();server.kill('SIGTERM')}})().catch(e=>{server.kill('SIGTERM');console.error(e);process.exit(1)});

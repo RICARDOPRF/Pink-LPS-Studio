@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070a12">
+  <title>Pink LPS Studio Next</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="../../pink-public-config.js"></script>
+</head>
+<body>
+  <div class="app-shell" data-mode="command-center">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">P</span><div><strong>PINK</strong><small>LPS STUDIO NEXT</small></div></div>
+      <div class="health" id="health-strip" aria-live="polite"></div>
+      <button class="ghost" id="mode-toggle" type="button">Pink Only</button>
+    </header>
+
+    <aside class="nav" aria-label="Navegação">
+      <button class="nav-item active" data-view="home">Visão Geral</button>
+      <button class="nav-item" data-view="tasks">Tarefas</button>
+      <button class="nav-item" data-view="memory">Memória</button>
+      <button class="nav-item" data-view="skills">Skills</button>
+      <button class="nav-item" data-view="evolution">Autoevolução</button>
+      <button class="nav-item" data-view="security">Segurança</button>
+    </aside>
+
+    <main class="workspace">
+      <section class="hero-card" id="pink-stage">
+        <div class="orb" aria-hidden="true"><div class="orb-core"></div></div>
+        <div class="hero-copy">
+          <span class="eyebrow">TALK · BUILD · OPERATE</span>
+          <h1>Pink Next</h1>
+          <p>Runtime reconstruído: tasks persistentes, contexto limitado, tools progressivas e segurança fora do LLM.</p>
+        </div>
+      </section>
+
+      <section class="panel-grid" id="dashboard"></section>
+    </main>
+
+    <aside class="inspector">
+      <div class="inspector-head"><span>Task Runtime</span><span class="status-dot"></span></div>
+      <div id="task-list" class="task-list"></div>
+    </aside>
+
+    <footer class="composer">
+      <label class="composer-box">
+        <span class="sr-only">Comando para a Pink</span>
+        <textarea id="prompt" rows="1" placeholder="Converse ou dê uma tarefa à Pink..."></textarea>
+        <button id="send" type="button">Executar</button>
+      </label>
+    </footer>
+  </div>
+  <script type="module" src="./main.mjs"></script>
+</body>
+</html>
