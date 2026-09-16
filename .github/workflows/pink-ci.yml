@@ -127,3 +127,5 @@ jobs:
         run: npx playwright@1.63.0 install --with-deps chromium
       - name: Desktop and mobile browser smoke
         run: node tests/browser-smoke.cjs
+      - name: V15 capability awareness browser smoke
+        run: node tests/capability-awareness-browser.cjs
