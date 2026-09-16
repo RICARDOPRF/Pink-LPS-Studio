@@ -2,7 +2,7 @@
 const assert=require('node:assert/strict');
 const {spawn}=require('node:child_process');
 const {chromium,devices}=require('playwright');
-const port=Number(process.env.PINK_TEST_PORT||4174),baseUrl=`http://127.0.0.1:${port}/apps/next/`;
+const port=Number(process.env.PINK_TEST_PORT||4174),baseUrl=`http://127.0.0.1:${port}/apps/next/index.html`;
 const server=spawn(process.execPath,['tests/static-server.cjs'],{stdio:['ignore','pipe','inherit'],env:{...process.env,PINK_TEST_PORT:String(port)}});
 function waitForServer(){return new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error('Pink Next test server timeout')),8000);server.stdout.on('data',c=>{if(String(c).includes('Pink test server')){clearTimeout(timer);resolve()}});server.once('exit',code=>{clearTimeout(timer);if(code!==null&&code!==0)reject(new Error(`server exited ${code}`))})})}
 async function smoke(browser,name,options){
