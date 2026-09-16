@@ -63,6 +63,7 @@ jobs:
           node tests/agent-harness.cjs
           node tests/tool-risk.cjs
           node tests/operational-senses.cjs
+          node tests/capability-awareness.cjs
           node tests/core-intelligence.cjs
           node tests/unified-ai-gateway.cjs
           node tests/engineering-evolution.cjs
@@ -89,7 +90,9 @@ jobs:
 
       - name: Desktop and mobile browser smoke
         if: steps.guard.outputs.skip != 'true'
-        run: node tests/browser-smoke.cjs
+        run: |
+          node tests/browser-smoke.cjs
+          node tests/capability-awareness-browser.cjs
 
       - name: Commit autonomous improvement
         if: steps.guard.outputs.skip != 'true'
@@ -113,6 +116,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           title="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write(('Pink N5: '+r.title).slice(0,120))")"
-          body="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write('Autonomous N5 evolution awaiting human review.\n\nFile: `'+r.path+'`\n\nRationale: '+r.rationale+'\n\nRuntime evolution signals considered: '+(r.runtimeSignalsConsidered||0)+'\n\nFull Pink safety contracts, operational senses contracts and desktop/mobile browser smoke passed inside the N5 workflow before this draft PR was created. The change is small, reversible and restricted by governance/n5-autopilot.json.\n\nNo production deployment. No automatic merge. Paulo must review and approve.')")"
+          body="$(node -e "const r=require('./.pink-n5-result.json'); process.stdout.write('Autonomous N5 evolution awaiting human review.\n\nFile: `'+r.path+'`\n\nRationale: '+r.rationale+'\n\nRuntime evolution signals considered: '+(r.runtimeSignalsConsidered||0)+'\n\nFull Pink safety contracts, operational senses, V15 capability-awareness contracts and desktop/mobile browser smoke passed inside the N5 workflow before this draft PR was created. The change is small, reversible and restricted by governance/n5-autopilot.json.\n\nNo production deployment. No automatic merge. Paulo must review and approve.')")"
           url="$(gh pr create --draft --base main --head '${{ steps.branch.outputs.name }}' --title "$title" --body "$body")"
           echo "Created $url"
