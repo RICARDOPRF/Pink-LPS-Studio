@@ -15,7 +15,7 @@ async function smoke(browser,name,contextOptions){
  await page.waitForFunction(()=>Boolean(window.PinkCameraRouter&&window.PinkGeminiResearch&&window.PinkTools),null,{timeout:12000});
  await page.waitForFunction(()=>Boolean(window.PinkCommandCenter&&document.getElementById('pinkCommandDock')),null,{timeout:12000});
  await page.waitForFunction(()=>Boolean(window.PinkOrbConsole?.snapshot?.().ready),null,{timeout:15000});
- await page.waitForFunction(()=>Boolean(window.PinkAutonomy&&window.PinkAutonomyModalHotfix&&document.getElementById('pinkAutonomyOverlay')&&document.getElementById('pinkAutonomyBtn')),null,{timeout:15000});
+ await page.waitForFunction(()=>Boolean(window.PinkAutonomy&&window.PinkAutonomousEvolution&&window.PinkAutonomyModalHotfix&&document.getElementById('pinkAutonomyOverlay')&&document.getElementById('pinkAutonomyBtn')),null,{timeout:15000});
  const title=await page.title();assert.match(title,/Pink LPS Studio/i,`${name}: title mismatch`);
  const stage=page.locator('#pinkStage');assert.strictEqual(await stage.count(),1,`${name}: Pink stage missing`);assert.ok(await stage.isVisible(),`${name}: Pink stage not visible`);
  const orb=page.locator('#pinkOrbCanvas');assert.strictEqual(await orb.count(),1,`${name}: 3D orb canvas missing`);assert.ok(await orb.isVisible(),`${name}: 3D orb canvas not visible`);
@@ -35,6 +35,13 @@ async function smoke(browser,name,contextOptions){
  assert.strictEqual(await autonomyOverlay.isVisible(),false,`${name}: autonomy modal X did not close`);
  await page.locator('#pinkAutonomyBtn').click();
  assert.strictEqual(await autonomyOverlay.isVisible(),true,`${name}: autonomy modal second open failed`);
+ await page.locator('#pinkAutonomyOverlay [data-pink-tab="evolution"]').click();
+ const evolutionCandidateId=await page.evaluate(()=>window.PinkEvolution.addCandidate({kind:'reliability',title:'Smoke: aprovação humana da autoevolução',evidence:'Falha observada em runtime durante browser smoke',priority:'high'}).id);
+ await page.waitForFunction(id=>Boolean(document.querySelector(`[data-pink-approve-evolution="${id}"]`)),evolutionCandidateId,{timeout:6000});
+ const agreementButton=page.locator(`[data-pink-approve-evolution="${evolutionCandidateId}"]`);assert.ok(await agreementButton.isVisible(),`${name}: autoevolution agreement button missing`);assert.match(await agreementButton.textContent(),/Dar de acordo/i,`${name}: agreement button label mismatch`);
+ await agreementButton.click();
+ await page.waitForFunction(id=>window.PinkAutonomousEvolution.snapshot().candidates.some(c=>c.id===id&&c.approvedForEvolution===true&&c.status==='approved_for_evolution'),evolutionCandidateId,{timeout:6000});
+ const approvedCard=page.locator('.pink-evolution-card.approved').filter({hasText:'Smoke: aprovação humana da autoevolução'});assert.ok(await approvedCard.isVisible(),`${name}: approved evolution card not visible`);assert.match(await approvedCard.textContent(),/Aprovado para evolução/i,`${name}: approved evolution status missing`);
  await page.keyboard.press('Escape');
  assert.strictEqual(await autonomyOverlay.isVisible(),false,`${name}: autonomy modal Escape did not close`);
  const foundation=await page.evaluate(()=>window.PinkFoundation.health());assert.strictEqual(foundation.ok,true,`${name}: foundation health degraded: ${JSON.stringify(foundation)}`);
@@ -60,6 +67,6 @@ async function smoke(browser,name,contextOptions){
  const performance=await page.evaluate(()=>window.PinkPerformance.snapshot());assert.ok(performance&&performance.tier,`${name}: performance profile unavailable`);
  const bodyWidth=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.strictEqual(bodyWidth,true,`${name}: horizontal overflow detected`);
  const fatal=pageErrors.filter(m=>!/ResizeObserver loop/i.test(m));assert.deepStrictEqual(fatal,[],`${name}: page errors: ${fatal.join(' | ')}`);
- console.log(`Browser smoke ${name}: OK (${performance.tier}, orb ready, autonomy close verified, operational senses ready, core ${operating.version}, memory ${memoryHealth.version}, V14 ${harness.version}, supervisor active, command center ${commandSnapshot.version})`);await context.close();
+ console.log(`Browser smoke ${name}: OK (${performance.tier}, orb ready, autonomy/evolution approval verified, operational senses ready, core ${operating.version}, memory ${memoryHealth.version}, V14 ${harness.version}, supervisor active, command center ${commandSnapshot.version})`);await context.close();
 }
 (async()=>{await waitForServer();const browser=await chromium.launch({headless:true});try{await smoke(browser,'desktop',{viewport:{width:1440,height:900}});await smoke(browser,'mobile',{...devices['iPhone 14']})}finally{await browser.close();server.kill('SIGTERM')}})().catch(e=>{server.kill('SIGTERM');console.error(e);process.exit(1)});
