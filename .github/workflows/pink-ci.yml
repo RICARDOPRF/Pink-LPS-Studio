@@ -35,8 +35,11 @@ jobs:
           node --check agents/pink-openai.js
           node --check agents/pink-unified-ai-gateway.js
           node --check agents/pink-model-router.js
+          node --check runtime/pink-agent-harness.js
           node --check runtime/pink-supervisor-voice.js
           node --check voice/pink-gemini-live.js
+          node --check vision/pink-vision.js
+          node --check tools/pink-tool-registry.js
           node --check memory/pink-memory-core.js
           node --check memory/pink-memory-supabase.mjs
           node --check memory/pink-memory-bridge.js
@@ -60,10 +63,18 @@ jobs:
           node --check visual/pink-orb-console.mjs
           node --check visual/pink-runtime-health.js
           node --check scripts/pink-n5-autopilot.mjs
+      - name: Local Companion syntax and safety self-test
+        run: |
+          python -m py_compile companion/local_voice_service.py
+          python companion/local_voice_service.py --self-test
       - name: Foundation safety contracts
         run: node tests/foundation-safety.cjs
       - name: Human confirmation and undo contracts
         run: node tests/confirm-undo.cjs
+      - name: V14 agent harness contracts
+        run: node tests/agent-harness.cjs
+      - name: Tool capability risk contracts
+        run: node tests/tool-risk.cjs
       - name: Core intelligence contracts
         run: node tests/core-intelligence.cjs
       - name: Unified AI Gateway contracts
