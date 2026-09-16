@@ -8,9 +8,12 @@ class IntentContextRouter{
  constructor(){this.lastPlan=null}
  classify(text=''){
   const n=normalize(text);
-  if(/(abre|abrir|mostra|mostrar|entra|acesse|vai para)/.test(n))return 'open_project';
+  const cameraCapability=root.PinkCameraRouter?.classify?.(text)||null;
+  if(cameraCapability)return 'camera';
+  if(/(que horas|qual a hora|hora agora|horario agora|horario atual|que dia (e|é) hoje|qual a data|data de hoje|dia de hoje)/.test(n))return 'runtime_time';
   if(/(produtividade|avanco|desvio|hh|indicador|status do projeto|como esta)/.test(n))return 'project_metrics';
-  if(/(pesquisa|pesquisar|procura na internet|mercado|concorrente|norma|noticia|modelo nvidia)/.test(n))return 'research';
+  if(/(pesquisa|pesquisar|procura na internet|busca na internet|internet|web|mercado|concorrente|norma|noticia|modelo nvidia|ultimo|ultima|mais recente|hoje aconteceu)/.test(n))return 'research';
+  if(/(abre|abrir|mostra|mostrar|entra|acesse|vai para)/.test(n))return 'open_project';
   if(/(documento|arquivo|procedimento|memoria|historico|decisao|drive)/.test(n))return 'knowledge';
   if(/(melhora|corrige|ajusta|bug|implementar|codigo|menu|refator)/.test(n))return 'software_change';
   if(/(otimiz|rota|cronograma|aloca|sequencia|planejamento)/.test(n))return 'optimization';
@@ -27,7 +30,12 @@ class IntentContextRouter{
   const text=String(input||'').trim();if(!text)throw new Error('intent_input_required');
   const intent=this.classify(text);const project=this.resolveProject(text)||context.activeProject||this.activeProject()||null;
   const steps=[];let risk='READ_ONLY';
-  if(intent==='open_project'){steps.push({kind:'tool',tool:'painel-router',capability:'panel.open',args:{project:project||text}})}
+  if(intent==='camera'){
+    const capability=root.PinkCameraRouter?.classify?.(text)||'camera.status';
+    steps.push({kind:'tool',tool:'camera',capability,args:{request:text,question:text}});
+  }
+  else if(intent==='runtime_time'){steps.push({kind:'tool',tool:'runtime-clock',capability:/(data|dia)/.test(normalize(text))?'date.current':'time.current',args:{request:text}})}
+  else if(intent==='open_project'){steps.push({kind:'tool',tool:'painel-router',capability:'panel.open',args:{project:project||text}})}
   else if(intent==='project_metrics'){steps.push({kind:'tool',tool:'painel-router',capability:'project.metrics',args:{project:project||text,request:text}})}
   else if(intent==='research'){steps.push({kind:'ai',capability:'research',prompt:text})}
   else if(intent==='knowledge'){steps.push({kind:'ai',capability:'rag',prompt:text})}
@@ -63,8 +71,8 @@ class IntentContextRouter{
   const status=results.some(x=>x.result?.status==='needs_approval')?'needs_approval':results.some(x=>['failed','blocked_external','blocked'].includes(x.result?.status))?'blocked': 'completed';
   return {status,planId:plan.id,intent:plan.intent,project:plan.project,results};
  }
- snapshot(){return {version:'1.1.0',lastPlan:this.lastPlan}}
+ snapshot(){return {version:'1.2.0',lastPlan:this.lastPlan}}
 }
 const router=new IntentContextRouter();
-return {version:'1.1.0',router,plan:(i,c)=>router.plan(i,c),execute:(p,c)=>router.execute(p,c),snapshot:()=>router.snapshot()};
+return {version:'1.2.0',router,plan:(i,c)=>router.plan(i,c),execute:(p,c)=>router.execute(p,c),snapshot:()=>router.snapshot()};
 });

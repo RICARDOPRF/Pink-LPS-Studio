@@ -6,7 +6,7 @@
   let recognition=null,active=false,speaking=false,starting=false,lastProvider='nvidia';
   const history=[];
 
-  function providerLabel(){return lastProvider==='nvidia'?'NVIDIA Nemotron':lastProvider==='gemini'?'Gemini':lastProvider==='openai'?'OpenAI':lastProvider==='claude'?'Claude':'Pink Brain'}
+  function providerLabel(){return lastProvider==='nvidia'?'NVIDIA Nemotron':lastProvider==='gemini'?'Gemini':lastProvider==='gemini-reasoning'?'Gemini + Google Search':lastProvider==='openai'?'OpenAI':lastProvider==='claude'?'Claude':'Pink Brain'}
   function state(name,label){
     const stage=$('#pinkStage');if(stage)stage.dataset.state=name;
     if($('#avatarStateText'))$('#avatarStateText').textContent=label||({idle:'Pronta',listening:'Ouvindo você',thinking:'Pensando',speaking:'Falando',error:'Atenção'}[name]||name);
@@ -32,6 +32,10 @@
       return memories.map((m,i)=>`${i+1}. [${m.memory_type||m.type||'memory'}] ${m.content_text||m.text||''}`).filter(Boolean).join('\n');
     }catch(_){return ''}
   }
+  function runtimeNow(){
+    const d=new Date();
+    return `Data e hora do dispositivo: ${new Intl.DateTimeFormat('pt-BR',{dateStyle:'full',timeStyle:'long'}).format(d)}. Fuso: ${Intl.DateTimeFormat().resolvedOptions().timeZone||'não informado'}.`;
+  }
   async function askBrain(prompt,{complex=false,memoryQuery=null}={}){
     const cfg=window.PinkPublicConfig?.supabase||{};
     if(!cfg.url||!cfg.anonKey)throw new Error('pink_brain_config_missing');
@@ -39,7 +43,7 @@
     const activeProject=window.PinkOperatingCore?.snapshot?.().awareness?.activeProject||window.PinkCore?.activeProject||null;
     const speakerContext=window.PinkSpeakerIdentity?.context?.()||'Pessoa falando: não identificada.';
     const memory=await memoryPromise;
-    const input=[speakerContext,activeProject?`Projeto ativo: ${activeProject}`:'',memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
+    const input=[runtimeNow(),speakerContext,activeProject?`Projeto ativo: ${activeProject}`:'',memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
     const endpoint=`${String(cfg.url).replace(/\/$/,'')}/functions/v1/pink-brain`;
     const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input,reasoningEffort:complex?'medium':'low',maxOutputTokens:complex?1400:900})});
     const payload=await response.json().catch(()=>({}));
@@ -62,8 +66,23 @@
   }
   function shouldExecuteOperational(plan){
     if(!plan?.steps?.length)return false;
-    // Fast path: AI-only intents go straight to Pink Brain. This avoids two model calls for one user request.
+    if(plan.intent==='research')return true;
     return plan.steps.every(step=>step.kind==='tool');
+  }
+  function unwrap(value){let x=value;for(let i=0;i<5&&x&&typeof x==='object'&&x.status==='completed'&&Object.prototype.hasOwnProperty.call(x,'result');i++)x=x.result;return x}
+  function verifiedReply(plan,result){
+    if(!plan||result?.status!=='completed')return '';
+    const first=result.results?.[0]?.result;const data=unwrap(first);
+    if(plan.intent==='runtime_time'&&data){return `Agora são ${data.localTime||''}${data.localDate?`, ${data.localDate}`:''}${data.timezone?`. Fuso ${data.timezone}.`:'.'}`}
+    if(plan.intent==='camera'&&data){
+      if(data.observation){const o=typeof data.observation==='string'?data.observation:JSON.stringify(data.observation);return String(o).slice(0,3500)}
+      if(data.message)return String(data.message);
+      if(typeof data.active==='boolean')return data.active?'A câmera está aberta nesta sessão.':'A câmera está fechada.';
+    }
+    if(plan.intent==='research'&&data){
+      const reply=String(data.reply||data.report||'').trim();if(reply){lastProvider='gemini-reasoning';render();return reply}
+    }
+    return '';
   }
   async function handle(text){
     const q=String(text||'').trim();if(!q)return;add('user',q);state('thinking');
@@ -76,7 +95,12 @@
       window.PinkCore?.handleUserSpeech?.(q);
       const operational=window.PinkIntentRouter?.plan?.(q,{activeProject:window.PinkOperatingCore?.snapshot?.().awareness?.activeProject||null});
       let result=null;
-      if(shouldExecuteOperational(operational)&&window.PinkIntentRouter?.execute){try{result=await window.PinkIntentRouter.execute(operational)}catch(_){} }
+      if(shouldExecuteOperational(operational)&&window.PinkIntentRouter?.execute){
+        try{result=await window.PinkIntentRouter.execute(operational)}catch(error){window.PinkEvolution?.recordIssue?.(`operation:${operational?.intent||'unknown'}`,error?.message||error)}
+      }
+      if(result&&['blocked','failed'].includes(result.status))window.PinkEvolution?.recordIssue?.(`operation:${operational?.intent||'unknown'}`,JSON.stringify(result).slice(0,500));
+      const direct=verifiedReply(operational,result);
+      if(direct){history.push({role:'user',content:q},{role:'assistant',content:direct});while(history.length>10)history.shift();add('assistant',direct);await speak(direct);return}
       const opText=result&&result.status==='completed'?`\n\nResultado operacional verificado:\n${JSON.stringify(result).slice(0,3500)}`:result&&result.status==='needs_approval'?`\n\nAção operacional aguardando aprovação do Ricardo.`:'';
       const recent=history.slice(-4).map(x=>`${x.role}: ${x.content}`).join('\n');
       const complex=['research','knowledge','software_change','optimization'].includes(operational?.intent);
