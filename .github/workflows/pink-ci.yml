@@ -1,7 +1,7 @@
 name: Pink CI
 on:
   push:
-    branches: [main, 'phase/**', 'evolution/**', 'feature/**', 'lab/**', 'pink-n5/**']
+    branches: [main, 'phase/**', 'evolution/**', 'feature/**', 'lab/**', 'pink-n5/**', 'rebuild/**']
   pull_request:
     branches: [main]
 permissions:
@@ -65,6 +65,7 @@ jobs:
           node --check visual/pink-orb-console.mjs
           node --check visual/pink-runtime-health.js
           node --check scripts/pink-n5-autopilot.mjs
+          find packages apps/next -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - name: Local Companion syntax and safety self-test
         run: |
           python -m py_compile companion/local_voice_service.py
@@ -109,6 +110,10 @@ jobs:
         run: node tests/performance-governor.cjs
       - name: Runtime health and avatar performance
         run: node tests/runtime-health.cjs
+      - name: Pink Next architecture contracts
+        run: node tests/pink-next-contracts.mjs
+      - name: Pink Next behavioral evals
+        run: node tests/pink-next-behavioral.mjs
   browser-smoke:
     needs: runtime-checks
     runs-on: ubuntu-latest
@@ -122,5 +127,7 @@ jobs:
         run: npm install --no-save --ignore-scripts playwright@1.63.0
       - name: Install Chromium
         run: npx playwright@1.63.0 install --with-deps chromium
-      - name: Desktop and mobile browser smoke
+      - name: Legacy desktop and mobile browser smoke
         run: node tests/browser-smoke.cjs
+      - name: Pink Next desktop and mobile browser smoke
+        run: node tests/pink-next-browser-smoke.cjs
