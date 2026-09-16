@@ -1,5 +1,6 @@
 import importlib.util
 import os
+import sys
 import tempfile
 from pathlib import Path
 
@@ -11,7 +12,11 @@ with tempfile.TemporaryDirectory() as config_dir, tempfile.TemporaryDirectory() 
     spec = importlib.util.spec_from_file_location('pink_satellite_test', Path(__file__).resolve().parents[1] / 'companion' / 'satellite_service.py')
     module = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
-    spec.loader.exec_module(module)
+    sys.modules[spec.name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(spec.name, None)
 
     runtime = module.SatelliteRuntime()
     assert runtime.roots == [Path(allowed_dir).resolve()]
