@@ -1,6 +1,17 @@
 'use strict';
 const assert = require('node:assert');
 
+const autonomous = require('../evolution/pink-autonomous-evolution.js');
+const gateCandidate = autonomous.observe({id:'cand_human_gate',type:'reliability',title:'Falha de câmera observada',evidence:'camera_runtime_unavailable',impact:.8,confidence:.95,risk:.15,effort:.25});
+assert.strictEqual(gateCandidate.approvedForEvolution,false,'new candidates must start without human approval');
+assert.ok(!autonomous.prioritize(10).some(c=>c.id===gateCandidate.id),'unapproved candidate must not enter autonomous engineering priority');
+const humanApproved = autonomous.approve(gateCandidate.id,{source:'contract-test'});
+assert.strictEqual(humanApproved.status,'approved_for_evolution');
+assert.strictEqual(humanApproved.approvedForEvolution,true);
+assert.strictEqual(humanApproved.approvedBy,'Paulo Ricardo');
+assert.ok(autonomous.prioritize(10).some(c=>c.id===gateCandidate.id),'human-approved candidate must become eligible for autonomous engineering');
+assert.strictEqual(autonomous.can('publish_production'),false,'candidate agreement must never authorize production publication');
+
 const candidate = {
   id: 'cand_test_001',
   kind: 'reliability',
