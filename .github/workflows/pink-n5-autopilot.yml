@@ -60,6 +60,8 @@ jobs:
           node scripts/dependency-audit.cjs
           node tests/foundation-safety.cjs
           node tests/confirm-undo.cjs
+          node tests/agent-harness.cjs
+          node tests/tool-risk.cjs
           node tests/core-intelligence.cjs
           node tests/unified-ai-gateway.cjs
           node tests/engineering-evolution.cjs
