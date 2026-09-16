@@ -9,10 +9,13 @@ async function smoke(browser,name,options){
   const context=await browser.newContext(options),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(String(e?.message||e)));
   await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:20000});
   await page.waitForFunction(()=>Boolean(window.PinkNext?.snapshot),null,{timeout:10000});
+  const runtime=await page.evaluate(()=>window.PinkNext.snapshot());
+  assert.equal(runtime.version,'next-0.3.0',`${name}: Pink Next runtime version mismatch`);
+  assert.ok(runtime.satellite&&runtime.satellite.endpoint.includes('127.0.0.1'),`${name}: Satellite client missing`);
   assert.match(await page.title(),/Pink LPS Studio Next/i);
   assert.ok(await page.locator('#pink-stage').isVisible(),`${name}: Pink stage hidden`);
   assert.ok(await page.locator('#prompt').isVisible(),`${name}: composer hidden`);
-  const overflow=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.equal(overflow,true,`${name}: horizontal overflow`);
+  let overflow=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.equal(overflow,true,`${name}: horizontal overflow`);
   await page.locator('#prompt').fill('Pesquise na web e valide evidências do projeto Pink');
   await page.locator('#send').click();
   await page.waitForFunction(()=>window.PinkNext.taskRuntime.list().length>=1);
@@ -23,6 +26,15 @@ async function smoke(browser,name,options){
   const capabilities=await page.evaluate(()=>window.PinkNext.tools.list());
   assert.ok(capabilities.some(x=>x.id==='ai.nvidia'));
   assert.ok(capabilities.some(x=>x.id==='memory.cloud'));
+
+  await page.locator('[data-view="satellite"]').click();
+  assert.ok(await page.getByText('Pink Satellite Windows',{exact:true}).isVisible(),`${name}: Satellite panel hidden`);
+  assert.ok(await page.locator('#sat-probe').isVisible(),`${name}: Satellite detect action missing`);
+  assert.ok(await page.locator('#sat-pair-code').isVisible(),`${name}: Satellite pairing input missing`);
+  assert.equal(await page.locator('#sat-system').isDisabled(),true,`${name}: local action must be disabled before pairing`);
+  overflow=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.equal(overflow,true,`${name}: Satellite view horizontal overflow`);
+
+  await page.locator('[data-view="home"]').click();
   if(name==='desktop'){
     await page.locator('#mode-toggle').click();assert.equal(await page.locator('.app-shell').getAttribute('data-mode'),'pink-only');
     assert.equal(await page.locator('.inspector').isVisible(),false);await page.locator('#mode-toggle').click();
