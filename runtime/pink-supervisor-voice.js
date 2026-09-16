@@ -36,6 +36,9 @@
     const d=new Date();
     return `Data e hora do dispositivo: ${new Intl.DateTimeFormat('pt-BR',{dateStyle:'full',timeStyle:'long'}).format(d)}. Fuso: ${Intl.DateTimeFormat().resolvedOptions().timeZone||'não informado'}.`;
   }
+  function capabilityContext(query){
+    try{return window.PinkCapabilityAwareness?.manifest?.(query,{limit:8})||''}catch(_){return ''}
+  }
   async function askBrain(prompt,{complex=false,memoryQuery=null}={}){
     const cfg=window.PinkPublicConfig?.supabase||{};
     if(!cfg.url||!cfg.anonKey)throw new Error('pink_brain_config_missing');
@@ -43,7 +46,8 @@
     const activeProject=window.PinkOperatingCore?.snapshot?.().awareness?.activeProject||window.PinkCore?.activeProject||null;
     const speakerContext=window.PinkSpeakerIdentity?.context?.()||'Pessoa falando: não identificada.';
     const memory=await memoryPromise;
-    const input=[runtimeNow(),speakerContext,activeProject?`Projeto ativo: ${activeProject}`:'',memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
+    const capabilities=capabilityContext(memoryQuery||prompt);
+    const input=[runtimeNow(),speakerContext,activeProject?`Projeto ativo: ${activeProject}`:'',capabilities,memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
     const endpoint=`${String(cfg.url).replace(/\/$/,'')}/functions/v1/pink-brain`;
     const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input,reasoningEffort:complex?'medium':'low',maxOutputTokens:complex?1400:900})});
     const payload=await response.json().catch(()=>({}));
@@ -73,6 +77,7 @@
   function verifiedReply(plan,result){
     if(!plan||result?.status!=='completed')return '';
     const first=result.results?.[0]?.result;const data=unwrap(first);
+    if(plan.intent==='capability_query'&&data?.reply)return String(data.reply).slice(0,3500);
     if(plan.intent==='runtime_time'&&data){return `Agora são ${data.localTime||''}${data.localDate?`, ${data.localDate}`:''}${data.timezone?`. Fuso ${data.timezone}.`:'.'}`}
     if(plan.intent==='camera'&&data){
       if(data.observation){const o=typeof data.observation==='string'?data.observation:JSON.stringify(data.observation);return String(o).slice(0,3500)}
