@@ -5,7 +5,7 @@ const memory=require('../memory/pink-memory-core.js');
 class Storage{constructor(){this.map=new Map()}getItem(k){return this.map.has(k)?this.map.get(k):null}setItem(k,v){this.map.set(k,String(v))}removeItem(k){this.map.delete(k)}}
 
 (async()=>{
-  assert.strictEqual(memory.version,'4.0.0');
+  assert.strictEqual(memory.version,'4.1.0');
   assert.strictEqual(memory.normalize('Forno Panela'),'forno panela');
   assert.match(memory.redactSecrets('Authorization: Bearer abc.def.ghi'),/REDACTED/);
   assert.match(memory.redactSecrets('password=supersecreto'),/REDACTED/);
