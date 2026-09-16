@@ -37,6 +37,12 @@ class IntentContextRouter{
   else steps.push({kind:'ai',capability:'reasoning',prompt:text});
   const plan={id:`plan_${Date.now()}`,intent,text,project,risk,steps,status:'planned',createdAt:new Date().toISOString()};this.lastPlan=plan;return JSON.parse(JSON.stringify(plan));
  }
+ async invokeTool(step,approvalContext={}){
+   if(root.PinkAgentHarness?.invokeTool)return root.PinkAgentHarness.invokeTool(step.tool,step.capability,step.args||{},approvalContext);
+   if(!root.PinkAIGateway?.tool)return {status:'blocked_external',reason:'tool_gateway_unavailable'};
+   const legacyApproved=approvalContext?.approvedByUi===true&&approvalContext?.approvalSource==='PinkConfirmGate'&&Boolean(approvalContext?.confirmationId);
+   return root.PinkAIGateway.tool(step.tool,step.capability,step.args||{},{...approvalContext,approved:legacyApproved});
+ }
  async execute(plan,context={}){
   if(!plan?.steps?.length)return {status:'failed',reason:'empty_plan'};
   const results=[];for(const step of plan.steps){
@@ -47,18 +53,18 @@ class IntentContextRouter{
    }else if(step.kind==='tool'){
     const highRisk=['EXTERNAL_WRITE','DESTRUCTIVE','PRODUCTION'].includes(plan.risk);
     if(highRisk&&root.PinkConfirmGate){
-      result={status:'needs_approval',confirmation:root.PinkConfirmGate.requestConfirmation({title:`Confirmar ${step.capability}?`,actionId:`${step.tool}:${step.capability}`,detail:plan.text,run:()=>root.PinkAIGateway?.tool?.(step.tool,step.capability,step.args,{approvedByUi:true})})};
-    }else result=await root.PinkAIGateway?.tool?.(step.tool,step.capability,step.args,{approvedByUi:false})||{status:'blocked_external',reason:'tool_gateway_unavailable'};
+      result={status:'needs_approval',confirmation:root.PinkConfirmGate.requestConfirmation({title:`Confirmar ${step.capability}?`,actionId:`${step.tool}:${step.capability}`,detail:plan.text,run:approval=>this.invokeTool(step,approval)})};
+    }else result=await this.invokeTool(step,context);
    }
    results.push({step,result});
-   if(['failed','blocked_external'].includes(result?.status))break;
+   if(['failed','blocked_external','blocked'].includes(result?.status))break;
    if(result?.status==='needs_approval')break;
   }
-  const status=results.some(x=>x.result?.status==='needs_approval')?'needs_approval':results.some(x=>['failed','blocked_external'].includes(x.result?.status))?'blocked': 'completed';
+  const status=results.some(x=>x.result?.status==='needs_approval')?'needs_approval':results.some(x=>['failed','blocked_external','blocked'].includes(x.result?.status))?'blocked': 'completed';
   return {status,planId:plan.id,intent:plan.intent,project:plan.project,results};
  }
- snapshot(){return {version:'1.0.0',lastPlan:this.lastPlan}}
+ snapshot(){return {version:'1.1.0',lastPlan:this.lastPlan}}
 }
 const router=new IntentContextRouter();
-return {version:'1.0.0',router,plan:(i,c)=>router.plan(i,c),execute:(p,c)=>router.execute(p,c),snapshot:()=>router.snapshot()};
+return {version:'1.1.0',router,plan:(i,c)=>router.plan(i,c),execute:(p,c)=>router.execute(p,c),snapshot:()=>router.snapshot()};
 });
