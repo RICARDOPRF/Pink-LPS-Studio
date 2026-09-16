@@ -1,0 +1,21 @@
+'use strict';
+const assert=require('node:assert');
+const h=require('../runtime/pink-agent-harness.js');
+(async()=>{
+  assert.strictEqual(h.version,'14.0.0');
+  assert.strictEqual(h.effectiveRisk({risk:'EXTERNAL_WRITE'},'repo.read'),'READ_ONLY');
+  assert.strictEqual(h.effectiveRisk({risk:'EXTERNAL_WRITE'},'file.write'),'EXTERNAL_WRITE');
+  const bus=new h.EventBus({limit:20});let seen=0;const off=bus.on('x',()=>seen++);bus.emit('x',{token:'Bearer abc.def.ghi'});off();bus.emit('x',{});assert.strictEqual(seen,1);assert.match(JSON.stringify(bus.history()),/REDACTED/);
+  const approvals=new h.ApprovalBroker();
+  assert.strictEqual(approvals.authorize({name:'github',risk:'EXTERNAL_WRITE'},'repo.read',{}).allowed,true);
+  assert.strictEqual(approvals.authorize({name:'github',risk:'EXTERNAL_WRITE'},'file.write',{approved:true}).allowed,false,'generic approved flag must not bypass scoped confirmation');
+  assert.strictEqual(approvals.authorize({name:'github',risk:'EXTERNAL_WRITE'},'file.write',{approvedByUi:true,approvalSource:'PinkConfirmGate',confirmationId:'confirm_1'}).allowed,true);
+  assert.strictEqual(approvals.authorize({name:'prod',risk:'PRODUCTION'},'deploy',{approvedByUi:true,approvalSource:'PinkConfirmGate',confirmationId:'confirm_2'}).allowed,false);
+  const circuits=new h.CircuitBreaker({threshold:2,baseCooldownMs:1000});circuits.failure('p',new Error('one'));assert.strictEqual(circuits.canAttempt('p'),true);circuits.failure('p',new Error('two'));assert.strictEqual(circuits.canAttempt('p'),false);circuits.success('p');assert.strictEqual(circuits.canAttempt('p'),true);
+  const pm=new h.PluginManager({bus:new h.EventBus(),approvals:new h.ApprovalBroker(),circuits:new h.CircuitBreaker()});
+  pm.register({id:'demo',risk:'EXTERNAL_WRITE',capabilities:['item.read','item.write'],capabilityRisks:{'item.read':'READ_ONLY','item.write':'EXTERNAL_WRITE'}});let writes=0;pm.attach('demo',{invoke:async(cap)=>{if(cap==='item.write')writes++;return cap}});
+  assert.strictEqual((await pm.invoke('demo','item.read')).status,'completed');
+  assert.strictEqual((await pm.invoke('demo','item.write')).status,'needs_approval');assert.strictEqual(writes,0);
+  const approved=await pm.invoke('demo','item.write',{}, {approvedByUi:true,approvalSource:'PinkConfirmGate',confirmationId:'confirm_3'});assert.strictEqual(approved.status,'completed');assert.strictEqual(writes,1);
+  console.log('Pink V14 Agent Harness contract: OK');
+})().catch(e=>{console.error(e);process.exit(1)});

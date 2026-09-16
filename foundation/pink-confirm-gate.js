@@ -24,11 +24,12 @@ async function resolveFromUi(id){
   const entry=pending.get(String(id));
   if(!entry)throw new Error('confirmation_missing_or_expired');
   clearTimeout(entry.timer);pending.delete(String(id));
-  return await entry.run();
+  const approval=Object.freeze({approvedByUi:true,approvalSource:'PinkConfirmGate',confirmationId:String(id),actionId:entry.actionId||null,approvedAt:Date.now()});
+  return await entry.run(approval);
 }
 function cancelFromUi(id){const entry=pending.get(String(id));if(!entry)return false;clearTimeout(entry.timer);pending.delete(String(id));return true}
 function pendingCount(){return pending.size}
 function isPending(id){return pending.has(String(id))}
 function snapshot(){return [...pending.values()].map(({run,timer,...x})=>({...x}))}
-return Object.freeze({version:'1.0.0',TIMEOUT_MS,requestConfirmation,resolveFromUi,cancelFromUi,pendingCount,isPending,snapshot,setConfirmationHandlers});
+return Object.freeze({version:'1.1.0',TIMEOUT_MS,requestConfirmation,resolveFromUi,cancelFromUi,pendingCount,isPending,snapshot,setConfirmationHandlers});
 });
