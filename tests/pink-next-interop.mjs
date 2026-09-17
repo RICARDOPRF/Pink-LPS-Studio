@@ -8,7 +8,7 @@ import { AgenticExecutionKernel, PermissionProfile } from '../packages/agentic-r
 
 const guardrails = createDefaultGuardrails();
 const fakeBearer = `Bearer ${'a'.repeat(32)}`;
-const fakeApiKey = `sk-${'b'.repeat(32)}`;
+const fakeApiKey = `test-api-key-${'b'.repeat(32)}`;
 assert.equal(guardrails.evaluate(GuardrailStage.TOOL_INPUT, { sourceTrust:'untrusted', risk:RiskLevel.LOW }).status, 'block');
 assert.equal(guardrails.evaluate(GuardrailStage.TOOL_INPUT, { sourceTrust:'untrusted', risk:RiskLevel.READ_ONLY }).status, 'pass');
 assert.equal(guardrails.evaluate(GuardrailStage.OUTPUT, { payload:fakeBearer }).status, 'block');
