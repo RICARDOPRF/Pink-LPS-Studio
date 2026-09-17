@@ -10,6 +10,7 @@ export const DEFAULT_HANDOFF_ROUTES = Object.freeze([
   [AgentRole.SUPERVISOR, AgentRole.RESEARCH], [AgentRole.SUPERVISOR, AgentRole.DEVELOPER],
   [AgentRole.SUPERVISOR, AgentRole.QA], [AgentRole.SUPERVISOR, AgentRole.SECURITY],
   [AgentRole.SUPERVISOR, AgentRole.BROWSER], [AgentRole.SUPERVISOR, AgentRole.DESKTOP],
+  [AgentRole.SUPERVISOR, AgentRole.VERIFIER], [AgentRole.VERIFIER, AgentRole.SUPERVISOR],
   [AgentRole.RESEARCH, AgentRole.SUPERVISOR], [AgentRole.DEVELOPER, AgentRole.SUPERVISOR],
   [AgentRole.QA, AgentRole.SUPERVISOR], [AgentRole.SECURITY, AgentRole.SUPERVISOR],
   [AgentRole.BROWSER, AgentRole.SUPERVISOR], [AgentRole.DESKTOP, AgentRole.SUPERVISOR],

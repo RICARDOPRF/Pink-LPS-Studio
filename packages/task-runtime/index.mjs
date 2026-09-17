@@ -23,7 +23,8 @@ export class TaskRuntime {
 
   start(id) { return this.#update(id, (t) => { t.status = TaskStatus.RUNNING; if (t.plan[0]) t.plan[0].status = 'running'; }); }
   pause(id, reason = 'human_input_required') { return this.#update(id, (t) => { t.status = TaskStatus.PAUSED; t.pauseReason = reason; this.#checkpoint(t, 'pause'); }); }
-  resume(id) { return this.#update(id, (t) => { if (t.status !== TaskStatus.PAUSED && t.status !== TaskStatus.BLOCKED) throw new Error('task is not resumable'); t.status = TaskStatus.RUNNING; t.pauseReason = null; this.#checkpoint(t, 'resume'); }); }
+  block(id, reason = 'blocked') { return this.#update(id, (t) => { t.status = TaskStatus.BLOCKED; t.blockReason = String(reason || 'blocked'); this.#checkpoint(t, 'blocked'); }); }
+  resume(id) { return this.#update(id, (t) => { if (t.status !== TaskStatus.PAUSED && t.status !== TaskStatus.BLOCKED) throw new Error('task is not resumable'); t.status = TaskStatus.RUNNING; t.pauseReason = null; t.blockReason = null; this.#checkpoint(t, 'resume'); }); }
 
   completeStep(id, evidence = null) {
     return this.#update(id, (t) => {
