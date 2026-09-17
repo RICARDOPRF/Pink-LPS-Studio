@@ -121,6 +121,8 @@ jobs:
         run: node tests/pink-next-contracts.mjs
       - name: Pink Next behavioral evals
         run: node tests/pink-next-behavioral.mjs
+      - name: Pink Next agentic governance
+        run: node tests/pink-next-agentic.mjs
 
   satellite-windows:
     needs: runtime-checks
