@@ -16,6 +16,13 @@
       "purpose": "VRM avatar loading and humanoid/expression runtime"
     },
     {
+      "name": "@mediapipe/tasks-vision",
+      "version": "1.0.1",
+      "source": "jsdelivr",
+      "license": "Apache-2.0",
+      "purpose": "Explicit opt-in, on-device hand landmark tracking for Pink Orbital gesture navigation"
+    },
+    {
       "name": "@supabase/supabase-js",
       "version": "2.116.0",
       "source": "jsdelivr",
