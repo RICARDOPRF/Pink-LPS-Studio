@@ -16,43 +16,17 @@
       <div class="health" id="health-strip" aria-live="polite"></div>
       <button class="ghost" id="mode-toggle" type="button">Pink Only</button>
     </header>
-
     <aside class="nav" aria-label="Navegação">
-      <button class="nav-item active" data-view="home">Visão Geral</button>
-      <button class="nav-item" data-view="tasks">Tarefas</button>
-      <button class="nav-item" data-view="memory">Memória</button>
-      <button class="nav-item" data-view="skills">Skills</button>
-      <button class="nav-item" data-view="satellite">Satellite</button>
-      <button class="nav-item" data-view="evolution">Autoevolução</button>
-      <button class="nav-item" data-view="security">Segurança</button>
+      <button class="nav-item active" data-view="home">Visão Geral</button><button class="nav-item" data-view="tasks">Tarefas</button><button class="nav-item" data-view="memory">Memória</button><button class="nav-item" data-view="skills">Skills</button><button class="nav-item" data-view="satellite">Satellite</button><button class="nav-item" data-view="evolution">Autoevolução</button><button class="nav-item" data-view="security">Segurança</button>
     </aside>
-
     <main class="workspace">
-      <section class="hero-card" id="pink-stage">
-        <div class="orb" aria-hidden="true"><div class="orb-core"></div></div>
-        <div class="hero-copy">
-          <span class="eyebrow">TALK · BUILD · OPERATE</span>
-          <h1>Pink Next</h1>
-          <p>Runtime reconstruído: tasks persistentes, contexto limitado, tools progressivas e segurança fora do LLM.</p>
-        </div>
-      </section>
-
+      <section class="hero-card" id="pink-stage"><div class="orb" aria-hidden="true"><div class="orb-core"></div></div><div class="hero-copy"><span class="eyebrow">TALK · BUILD · OPERATE</span><h1>Pink Next</h1><p>Runtime reconstruído: tasks persistentes, contexto limitado, tools progressivas e segurança fora do LLM.</p></div></section>
       <section class="panel-grid" id="dashboard"></section>
     </main>
-
-    <aside class="inspector">
-      <div class="inspector-head"><span>Task Runtime</span><span class="status-dot"></span></div>
-      <div id="task-list" class="task-list"></div>
-    </aside>
-
-    <footer class="composer">
-      <label class="composer-box">
-        <span class="sr-only">Comando para a Pink</span>
-        <textarea id="prompt" rows="1" placeholder="Converse ou dê uma tarefa à Pink..."></textarea>
-        <button id="send" type="button">Executar</button>
-      </label>
-    </footer>
+    <aside class="inspector"><div class="inspector-head"><span>Task Runtime</span><span class="status-dot"></span></div><div id="task-list" class="task-list"></div></aside>
+    <footer class="composer"><label class="composer-box"><span class="sr-only">Comando para a Pink</span><textarea id="prompt" rows="1" placeholder="Converse, dê uma tarefa ou anexe um arquivo para a Pink ler..."></textarea><button id="send" type="button">Executar</button></label></footer>
   </div>
   <script type="module" src="./main.mjs"></script>
+  <script type="module" src="./attachments.mjs"></script>
 </body>
 </html>
