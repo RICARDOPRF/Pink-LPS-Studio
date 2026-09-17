@@ -7,9 +7,11 @@ import { TraceStore } from '../packages/observability/index.mjs';
 import { AgenticExecutionKernel, PermissionProfile } from '../packages/agentic-runtime/index.mjs';
 
 const guardrails = createDefaultGuardrails();
+const fakeBearer = `Bearer ${'a'.repeat(32)}`;
+const fakeApiKey = `sk-${'b'.repeat(32)}`;
 assert.equal(guardrails.evaluate(GuardrailStage.TOOL_INPUT, { sourceTrust:'untrusted', risk:RiskLevel.LOW }).status, 'block');
 assert.equal(guardrails.evaluate(GuardrailStage.TOOL_INPUT, { sourceTrust:'untrusted', risk:RiskLevel.READ_ONLY }).status, 'pass');
-assert.equal(guardrails.evaluate(GuardrailStage.OUTPUT, { payload:'Bearer abcdefghijklmnopqrstuvwxyz123456' }).status, 'block');
+assert.equal(guardrails.evaluate(GuardrailStage.OUTPUT, { payload:fakeBearer }).status, 'block');
 
 const traces = new TraceStore();
 const trace = traces.start({ taskId:'task_v15', goal:'handoff test', variant:'candidate' });
@@ -22,7 +24,7 @@ const handoffs = new HandoffBroker({ guardrails, traces });
 const accepted = handoffs.create({
   from:AgentRole.SUPERVISOR, to:AgentRole.DEVELOPER, reason:'implementation', summary:'Prepare isolated change.', requiredRisk:RiskLevel.MEDIUM,
   taskId:'task_v15', trace,
-  context:{ apiKey:'sk-abcdefghijklmnopqrstuvwxyz123456', history:['raw transcript must not move'], file:'safe.js' },
+  context:{ apiKey:fakeApiKey, history:['raw transcript must not move'], file:'safe.js' },
   evidenceRefs:[{ id:'ev_1', type:'test', source:'ci', summary:'green baseline' }]
 });
 assert.equal(accepted.accepted, true);
