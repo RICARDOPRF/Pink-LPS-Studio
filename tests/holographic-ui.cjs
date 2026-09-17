@@ -54,7 +54,7 @@ assert.strictEqual(mediaPipe.license, 'Apache-2.0', 'MediaPipe license record mi
 
 assert.match(html, /pink-holographic-ui\.css\?v=3\.4\.3/, 'HUD styles not wired at current CSS version');
 assert.match(html, /pink-holographic-ui\.js\?v=3\.4\.2/, 'HUD runtime not wired');
-assert.match(html, /pink-orb-console\.css\?v=1\.1\.0/, 'orbital styles are not wired');
-assert.match(html, /pink-orb-console\.mjs\?v=1\.1\.0/, 'orbital runtime is not wired');
+assert.match(html, /pink-orb-console\.css\?v=1\.2\.0/, 'orbital styles are not wired at v1.2.0');
+assert.match(html, /pink-orb-console\.mjs\?v=1\.2\.0/, 'orbital runtime is not wired at v1.2.0');
 
 console.log('Pink holographic + orbital UI contract: OK');
