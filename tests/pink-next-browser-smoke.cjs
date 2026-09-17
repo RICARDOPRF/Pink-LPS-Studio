@@ -15,7 +15,7 @@ async function smoke(browser,name,options){
   assert.match(await page.title(),/Pink LPS Studio Next/i);
   assert.ok(await page.locator('#pink-stage').isVisible(),`${name}: Pink stage hidden`);
   assert.ok(await page.locator('#prompt').isVisible(),`${name}: composer hidden`);
-  assert.ok(await page.locator('#attach').isVisible(),`${name}: attachment action hidden`);
+  assert.ok(await page.locator('#attach-file').isVisible(),`${name}: attachment action hidden`);
   assert.equal(await page.locator('#file-input').getAttribute('multiple'),'');
   let overflow=await page.evaluate(()=>document.documentElement.scrollWidth<=document.documentElement.clientWidth+2);assert.equal(overflow,true,`${name}: horizontal overflow`);
   await page.locator('#prompt').fill('Pesquise na web e valide evidências do projeto Pink');
