@@ -25,6 +25,7 @@ jobs:
       - name: JavaScript syntax
         run: |
           node --check pink-public-config.js
+          node --check runtime/pink-speech-text.js
           node --check foundation/pink-foundation.js
           node --check foundation/pink-confirm-gate.js
           node --check foundation/pink-undo-stack.js
@@ -66,6 +67,8 @@ jobs:
           node --check visual/pink-runtime-health.js
           node --check scripts/pink-n5-autopilot.mjs
           find packages apps/next -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
+      - name: Natural speech and file reader contracts
+        run: node tests/natural-speech-and-files.cjs
       - name: Local Companion syntax and safety self-test
         run: |
           python -m py_compile companion/local_voice_service.py companion/satellite_service.py
