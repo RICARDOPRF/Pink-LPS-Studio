@@ -7,6 +7,9 @@ import { SkillRegistry } from '../skills/index.mjs';
 import { TraceStore } from '../observability/index.mjs';
 import { constraints, approvals } from '../security/index.mjs';
 import { PinkSupervisor } from '../agents/index.mjs';
+import { AgenticExecutionKernel } from '../agentic-runtime/index.mjs';
+import { createDefaultGuardrails } from '../guardrails/index.mjs';
+import { HandoffBroker } from '../handoffs/index.mjs';
 import { EvolutionEngine } from '../evolution/index.mjs';
 import { SatelliteRegistry } from '../satellite/index.mjs';
 import { PinkSatelliteClient } from '../satellite/client.mjs';
@@ -23,7 +26,10 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   const satellite = new PinkSatelliteClient({ storage: satelliteStorage });
   const cloud = createLegacyCloudAdapter(config);
   const security = { constraints, approvals };
+  const guardrails = createDefaultGuardrails();
+  const handoffs = new HandoffBroker({ guardrails, traces });
   const supervisor = new PinkSupervisor({ taskRuntime, tools, contextCompiler, memory, security, traces });
+  const agentic = new AgenticExecutionKernel({ taskRuntime, tools, security, traces, contextCompiler, memory, guardrails, handoffs });
   const evolution = new EvolutionEngine({ traces });
 
   async function restoreSatellite() {
@@ -52,7 +58,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.3.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, supervisor, evolution,
+    version: 'next-0.4.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, evolution,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
       return {
@@ -63,6 +69,9 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
         skills: skills.list(),
         satellites: satellites.list(),
         satellite: satellite.snapshot(),
+        handoffs: handoffs.snapshot(),
+        guardrails: guardrails.snapshot(),
+        agenticProfile: agentic.sandbox.profile,
         evolution: evolution.list()
       };
     }

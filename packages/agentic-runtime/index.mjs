@@ -1,6 +1,8 @@
-import { RiskLevel, makeId } from '../contracts/index.mjs';
+import { RiskLevel } from '../contracts/index.mjs';
 import { AgentRole, DEFAULT_AGENT_POLICIES } from '../agents/index.mjs';
 import { calculateRisk, wrapUntrusted } from '../security/index.mjs';
+import { GuardrailStage, createDefaultGuardrails } from '../guardrails/index.mjs';
+import { HandoffBroker } from '../handoffs/index.mjs';
 
 export const PermissionProfile = Object.freeze({
   OBSERVER:'observer', NORMAL:'normal', DEVELOPER:'developer'
@@ -58,10 +60,12 @@ export class SandboxPolicy {
 }
 
 export class AgenticExecutionKernel {
-  constructor({ taskRuntime, tools, security, traces, contextCompiler, memory, profile = PermissionProfile.NORMAL }) {
+  constructor({ taskRuntime, tools, security, traces, contextCompiler, memory, profile = PermissionProfile.NORMAL, guardrails = null, handoffs = null }) {
     Object.assign(this, { taskRuntime, tools, security, traces, contextCompiler, memory });
     this.planning = new PlanningFlow();
     this.sandbox = new SandboxPolicy({ profile });
+    this.guardrails = guardrails || createDefaultGuardrails();
+    this.handoffs = handoffs || new HandoffBroker({ guardrails:this.guardrails, traces });
   }
 
   prepare(goal, metadata = {}) {
@@ -70,8 +74,13 @@ export class AgenticExecutionKernel {
     return { task, flow };
   }
 
-  authorize({ action, role, manifestRisk = 0, hostRisk = 0, payloadRisk = 0, sourceTrustRisk = 0, approvalId = null, scope = {} }) {
+  authorize({ action, role, manifestRisk = 0, hostRisk = 0, payloadRisk = 0, sourceTrustRisk = 0, sourceTrust = 'trusted', payload = null, approvalId = null, scope = {}, trace = null }) {
     const risk = calculateRisk({ manifest:manifestRisk, host:hostRisk, payload:payloadRisk, sourceTrust:sourceTrustRisk });
+    const guardrail = this.guardrails.evaluate(GuardrailStage.TOOL_INPUT, { action, role, risk, sourceTrust, payload, scope });
+    if (!guardrail.ok) {
+      if (trace && this.traces?.event) this.traces.event(trace, 'guardrail', { stage:GuardrailStage.TOOL_INPUT, status:guardrail.status, tripwire:guardrail.tripwire, action:String(action || '') });
+      return { allowed:false, reason:'guardrail', risk, guardrail };
+    }
     const constraint = this.security.constraints.evaluate(action);
     if (!constraint.allowed) return { allowed:false, reason:'constraint', risk, constraint };
     const sandbox = this.sandbox.evaluate({ role, risk, action });
@@ -80,9 +89,16 @@ export class AgenticExecutionKernel {
       const approval = this.security.approvals.consume(approvalId, { capability:action, scope });
       if (!approval.ok) return { allowed:false, reason:'approval_required', risk, sandbox, approval };
     }
-    return { allowed:true, risk, sandbox };
+    return { allowed:true, risk, sandbox, guardrail };
   }
 
+  inspectOutput(payload, { stage = GuardrailStage.OUTPUT, trace = null } = {}) {
+    const guardrail = this.guardrails.evaluate(stage, { payload });
+    if (trace && !guardrail.ok && this.traces?.event) this.traces.event(trace, 'guardrail', { stage, status:guardrail.status, tripwire:guardrail.tripwire });
+    return guardrail;
+  }
+
+  handoff(input = {}) { return this.handoffs.create(input); }
   ingestExternal(data, source) { return wrapUntrusted(data, source); }
 
   capabilitySearch(query, limit = 8) {
