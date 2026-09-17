@@ -127,6 +127,8 @@ jobs:
         run: node tests/pink-next-interop.mjs
       - name: Pink Next V16 multi-agent orchestrator contracts
         run: node tests/pink-next-orchestrator.mjs
+      - name: Pink V18 Training Studio and MiniMind adapter contracts
+        run: node tests/pink-next-model-lab.mjs
 
   satellite-windows:
     needs: runtime-checks
