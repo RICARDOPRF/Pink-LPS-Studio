@@ -125,6 +125,8 @@ jobs:
         run: node tests/pink-next-agentic.mjs
       - name: Pink Next handoff, guardrail and trace-span contracts
         run: node tests/pink-next-interop.mjs
+      - name: Pink Next V16 multi-agent orchestrator contracts
+        run: node tests/pink-next-orchestrator.mjs
 
   satellite-windows:
     needs: runtime-checks
