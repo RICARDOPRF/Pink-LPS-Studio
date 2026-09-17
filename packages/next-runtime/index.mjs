@@ -10,6 +10,7 @@ import { PinkSupervisor } from '../agents/index.mjs';
 import { AgenticExecutionKernel } from '../agentic-runtime/index.mjs';
 import { createDefaultGuardrails } from '../guardrails/index.mjs';
 import { HandoffBroker } from '../handoffs/index.mjs';
+import { MultiAgentOrchestrator } from '../orchestrator/index.mjs';
 import { EvolutionEngine } from '../evolution/index.mjs';
 import { SatelliteRegistry } from '../satellite/index.mjs';
 import { PinkSatelliteClient } from '../satellite/client.mjs';
@@ -30,6 +31,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   const handoffs = new HandoffBroker({ guardrails, traces });
   const supervisor = new PinkSupervisor({ taskRuntime, tools, contextCompiler, memory, security, traces });
   const agentic = new AgenticExecutionKernel({ taskRuntime, tools, security, traces, contextCompiler, memory, guardrails, handoffs });
+  const orchestrator = new MultiAgentOrchestrator({ agentic, handoffs, traces, taskRuntime });
   const evolution = new EvolutionEngine({ traces });
 
   async function restoreSatellite() {
@@ -58,7 +60,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.4.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, evolution,
+    version: 'next-0.5.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
       return {
@@ -72,6 +74,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
         handoffs: handoffs.snapshot(),
         guardrails: guardrails.snapshot(),
         agenticProfile: agentic.sandbox.profile,
+        orchestration: orchestrator.snapshot(),
         evolution: evolution.list()
       };
     }
