@@ -19,6 +19,8 @@ import { ProjectBrainRegistry } from '../project-brain/index.mjs';
 import { GraphitiProjectBrainAdapter } from '../project-brain/graphiti-adapter.mjs';
 import { PinkTrainingStudio } from '../model-lab/index.mjs';
 import { MiniMindAdapter } from '../model-lab/minimind-adapter.mjs';
+import { PinkAgentLearningStudio } from '../agent-learning/index.mjs';
+import { AgentLightningAdapter } from '../agent-learning/agent-lightning-adapter.mjs';
 
 export function createPinkNextRuntime({ config = {}, storage = null, satelliteStorage = globalThis.sessionStorage } = {}) {
   const taskRuntime = new TaskRuntime({ storage });
@@ -41,6 +43,8 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   projectBrains.registerAdapter('graphiti', new GraphitiProjectBrainAdapter());
   const modelLab = new PinkTrainingStudio();
   modelLab.registerAdapter('minimind', new MiniMindAdapter());
+  const agentLearning = new PinkAgentLearningStudio();
+  agentLearning.registerAdapter('agent-lightning', new AgentLightningAdapter());
 
   async function restoreSatellite() {
     const device = await satellite.restore();
@@ -68,7 +72,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.7.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab,
+    version: 'next-0.8.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab, agentLearning,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
       return {
@@ -85,6 +89,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
         orchestration: orchestrator.snapshot(),
         projectBrains: projectBrains.snapshot(),
         modelLab: modelLab.snapshot(),
+        agentLearning: agentLearning.snapshot(),
         evolution: evolution.list()
       };
     }
