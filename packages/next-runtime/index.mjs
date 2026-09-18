@@ -15,6 +15,8 @@ import { EvolutionEngine } from '../evolution/index.mjs';
 import { SatelliteRegistry } from '../satellite/index.mjs';
 import { PinkSatelliteClient } from '../satellite/client.mjs';
 import { createLegacyCloudAdapter } from '../adapters/legacy-cloud.mjs';
+import { ProjectBrainRegistry } from '../project-brain/index.mjs';
+import { GraphitiProjectBrainAdapter } from '../project-brain/graphiti-adapter.mjs';
 
 export function createPinkNextRuntime({ config = {}, storage = null, satelliteStorage = globalThis.sessionStorage } = {}) {
   const taskRuntime = new TaskRuntime({ storage });
@@ -33,6 +35,8 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   const agentic = new AgenticExecutionKernel({ taskRuntime, tools, security, traces, contextCompiler, memory, guardrails, handoffs });
   const orchestrator = new MultiAgentOrchestrator({ agentic, handoffs, traces, taskRuntime });
   const evolution = new EvolutionEngine({ traces });
+  const projectBrains = new ProjectBrainRegistry();
+  projectBrains.registerAdapter('graphiti', new GraphitiProjectBrainAdapter());
 
   async function restoreSatellite() {
     const device = await satellite.restore();
@@ -60,7 +64,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.5.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution,
+    version: 'next-0.6.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
       return {
@@ -75,6 +79,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
         guardrails: guardrails.snapshot(),
         agenticProfile: agentic.sandbox.profile,
         orchestration: orchestrator.snapshot(),
+        projectBrains: projectBrains.snapshot(),
         evolution: evolution.list()
       };
     }
