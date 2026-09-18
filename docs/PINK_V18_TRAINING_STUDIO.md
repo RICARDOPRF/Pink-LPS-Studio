@@ -6,6 +6,8 @@ Adicionar à Pink uma camada própria para **criar, treinar, avaliar e registrar
 
 A arquitetura adota MiniMind como primeiro backend experimental de treinamento, mas mantém o domínio da LPS separado do framework externo.
 
+A V18 agora é empilhada sobre a V17 Project Brain, mantendo no mesmo runtime o contexto temporal por projeto e o laboratório de modelos.
+
 ## Upstream verificado
 
 Projeto: `jingyaogong/minimind`
@@ -102,9 +104,14 @@ O laboratório foi desenhado para futuros especialistas como:
 
 ## Relação com V17
 
-V17 Project Brain fornece contexto e fontes controladas por projeto.
+V17 Project Brain fornece contexto temporal, entidades e fontes controladas por projeto com Graphiti como backend opcional.
 
-V18 Training Studio transforma conjuntos aprovados desses dados em datasets/versionamentos para treino.
+V18 Training Studio transforma apenas conjuntos explicitamente aprovados desses dados em datasets/versionamentos para treino.
+
+O runtime combinado é `next-0.7.0` e expõe as duas camadas de forma separada:
+
+- `projectBrains` — contexto/memória temporal/provenance;
+- `modelLab` — datasets, jobs de treino e modelos candidatos.
 
 RAG e memória continuam separados de treinamento de pesos.
 
@@ -115,6 +122,6 @@ RAG e memória continuam separados de treinamento de pesos.
 - sem baixar modelo automaticamente;
 - sem enviar dataset a teacher externo sem política compatível;
 - sem secrets em manifests;
-- upstream pinado por SHA;
+- Graphiti e MiniMind permanecem externos e pinados por SHA;
 - release de modelo exige aprovação humana;
 - NO EVIDENCE → NO CLAIM.
