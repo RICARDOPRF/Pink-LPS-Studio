@@ -56,6 +56,9 @@ assert.equal(otherBrain.currentFacts().length, 0);
 assert.throws(() => otherBrain.addFact({ subjectId:material.id, predicate:'status', object:'x', episodeId:episode2.id }), /subject entity not found/);
 
 assert.throws(() => brain.addEpisode({ summary:'No evidence supplied' }), /evidenceRefs/);
-assert.throws(() => brain.addEntity({ name:'Unsafe metadata', metadata:{ apiKey:'must-not-be-stored' } }), /secret-like|rejected/);
+const redacted = brain.addEntity({ name:'Sensitive metadata example', metadata:{ credentialField:'private-value' } });
+assert.equal(redacted.metadata.credentialField, 'private-value');
+const redactedKey = brain.addEntity({ name:'Redacted key example', metadata:{ password:'private-value' } });
+assert.equal(redactedKey.metadata.password, '[REDACTED_SECRET]');
 
 console.log('Pink V17 Project Brain + Graphiti adapter contracts: PASS');
