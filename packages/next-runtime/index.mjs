@@ -15,6 +15,8 @@ import { EvolutionEngine } from '../evolution/index.mjs';
 import { SatelliteRegistry } from '../satellite/index.mjs';
 import { PinkSatelliteClient } from '../satellite/client.mjs';
 import { createLegacyCloudAdapter } from '../adapters/legacy-cloud.mjs';
+import { ProjectBrainRegistry } from '../project-brain/index.mjs';
+import { GraphitiProjectBrainAdapter } from '../project-brain/graphiti-adapter.mjs';
 import { PinkTrainingStudio } from '../model-lab/index.mjs';
 import { MiniMindAdapter } from '../model-lab/minimind-adapter.mjs';
 
@@ -35,6 +37,8 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   const agentic = new AgenticExecutionKernel({ taskRuntime, tools, security, traces, contextCompiler, memory, guardrails, handoffs });
   const orchestrator = new MultiAgentOrchestrator({ agentic, handoffs, traces, taskRuntime });
   const evolution = new EvolutionEngine({ traces });
+  const projectBrains = new ProjectBrainRegistry();
+  projectBrains.registerAdapter('graphiti', new GraphitiProjectBrainAdapter());
   const modelLab = new PinkTrainingStudio();
   modelLab.registerAdapter('minimind', new MiniMindAdapter());
 
@@ -64,7 +68,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.6.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, modelLab,
+    version: 'next-0.7.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
       return {
@@ -79,6 +83,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
         guardrails: guardrails.snapshot(),
         agenticProfile: agentic.sandbox.profile,
         orchestration: orchestrator.snapshot(),
+        projectBrains: projectBrains.snapshot(),
         modelLab: modelLab.snapshot(),
         evolution: evolution.list()
       };
