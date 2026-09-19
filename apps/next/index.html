@@ -7,6 +7,7 @@
   <title>Pink LPS Studio Next</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./satellite.css">
+  <link rel="stylesheet" href="./spatial.css">
   <script src="../../pink-public-config.js"></script>
 </head>
 <body>
@@ -14,13 +15,13 @@
     <header class="topbar">
       <div class="brand"><span class="brand-mark">P</span><div><strong>PINK</strong><small>LPS STUDIO NEXT</small></div></div>
       <div class="health" id="health-strip" aria-live="polite"></div>
-      <button class="ghost" id="mode-toggle" type="button">Pink Only</button>
+      <button class="ghost" id="spatial-toggle" type="button" aria-pressed="false">Spatial OS</button><button class="ghost" id="mode-toggle" type="button">Pink Only</button>
     </header>
     <aside class="nav" aria-label="Navegação">
       <button class="nav-item active" data-view="home">Visão Geral</button><button class="nav-item" data-view="tasks">Tarefas</button><button class="nav-item" data-view="memory">Memória</button><button class="nav-item" data-view="skills">Skills</button><button class="nav-item" data-view="satellite">Satellite</button><button class="nav-item" data-view="evolution">Autoevolução</button><button class="nav-item" data-view="security">Segurança</button>
     </aside>
     <main class="workspace">
-      <section class="hero-card" id="pink-stage"><div class="orb" aria-hidden="true"><div class="orb-core"></div></div><div class="hero-copy"><span class="eyebrow">TALK · BUILD · OPERATE</span><h1>Pink Next</h1><p>Runtime reconstruído: tasks persistentes, contexto limitado, tools progressivas e segurança fora do LLM.</p></div></section>
+      <section class="hero-card" id="pink-stage"><div class="spatial-stage" id="spatial-stage" hidden><div class="spatial-grid" aria-hidden="true"></div><div class="spatial-orbit" id="spatial-orbit"></div><div class="spatial-core"><span>PINK</span><small>MISSION CONTROL</small></div><div class="spatial-status" id="spatial-status">POINTER · BALANCED</div></div><div class="orb" aria-hidden="true"><div class="orb-core"></div></div><div class="hero-copy"><span class="eyebrow">TALK · BUILD · OPERATE</span><h1>Pink Next</h1><p>Runtime reconstruído: tasks persistentes, contexto limitado, tools progressivas e segurança fora do LLM.</p></div></section>
       <section class="panel-grid" id="dashboard"></section>
     </main>
     <aside class="inspector"><div class="inspector-head"><span>Task Runtime</span><span class="status-dot"></span></div><div id="task-list" class="task-list"></div></aside>
