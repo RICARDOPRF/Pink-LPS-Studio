@@ -1,3 +1,4 @@
+import { PinkAgentMeshView } from './agent-mesh-view.mjs';
 import { PinkSpatialPresence } from './spatial-presence.mjs';
 import { createPinkNextRuntime } from '../../packages/next-runtime/index.mjs';
 import { MemoryLayer } from '../../packages/contracts/index.mjs';
@@ -25,10 +26,13 @@ const spatialAgentCount = $('#spatial-agent-count');
 const spatialCoreState = $('#spatial-core-state');
 const spatialQuality = $('#spatial-quality');
 const spatialCamera = $('#spatial-camera');
+const agentMeshPanel = $('#agent-mesh-panel');
+const agentMeshClose = $('#agent-mesh-close');
 const spatialReducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches || false;
 const spatialLife = { raf:0, startedAt:0, selected:null, lastHud:0, running:false };
 runtime.spatial.setReducedMotion(spatialReducedMotion);
 const spatialPresence = new PinkSpatialPresence({ runtime });
+const agentMeshView = agentMeshPanel ? new PinkAgentMeshView({ runtime, root:agentMeshPanel }) : null;
 const productionCloudAllowed = location.origin === 'https://ricardoprf.github.io';
 let lastReply = '';
 let lastProvider = '';
@@ -157,6 +161,7 @@ function renderSpatialMissionControl() {
       const ev=runtime.spatial.selectTarget(target.id,{evidenceRefs:['spatial-ui-selection']});
       spatialLife.selected=target.id; updateSpatialSelection();
       if(spatialStatus) spatialStatus.textContent='SELECTED · '+target.label.toUpperCase();
+      if(target.id==='agent-mesh')agentMeshView?.show();else agentMeshView?.hide();
       window.dispatchEvent(new CustomEvent('pinknext:spatial-select',{detail:ev}));
     });
     spatialOrbit.appendChild(button);
@@ -173,7 +178,7 @@ function updateSpatialSelection(){
 }
 function updateSpatialHud(force=false){
   const now=performance.now(); if(!force&&now-spatialLife.lastHud<250)return; spatialLife.lastHud=now;
-  const snap=runtime.snapshot(); const running=(snap.tasks||[]).filter(x=>x.status==='running').length; const agents=snap.os?.agents?.length||0;
+  const snap=runtime.snapshot(); const running=(snap.tasks||[]).filter(x=>x.status==='running').length; const agents=snap.agentMesh?.nodes?.length||0;
   if(spatialTaskCount)spatialTaskCount.textContent=String(running);
   if(spatialAgentCount)spatialAgentCount.textContent=String(agents);
   if(spatialCoreState)spatialCoreState.textContent=running?'WORKING':'IDLE';
@@ -352,9 +357,10 @@ spatialStage?.addEventListener('pointermove',setSpatialPointer,{passive:true});
 spatialStage?.addEventListener('pointerleave',()=>{runtime.spatial.setPointer({x:0,y:0});if(spatialCore)spatialCore.style.transform='translate(-50%,-50%)';},{passive:true});
 spatialQuality?.addEventListener('click',cycleSpatialQuality);
 spatialCamera?.addEventListener('click',toggleSpatialCamera);
+agentMeshClose?.addEventListener('click',()=>agentMeshView?.hide());
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(spatialLife.raf);spatialLife.raf=0}else if(spatialLife.running&&!spatialLife.raf)spatialLife.raf=requestAnimationFrame(spatialLoop)});
 
-window.addEventListener('pagehide',()=>spatialPresence.destroy(),{once:true});
+window.addEventListener('pagehide',()=>{spatialPresence.destroy();agentMeshView?.destroy()},{once:true});
 
 modeToggle.addEventListener('click', () => {
   const next = shell.dataset.mode === 'pink-only' ? 'command-center' : 'pink-only';
