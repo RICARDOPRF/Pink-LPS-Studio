@@ -31,7 +31,7 @@ export class PinkSpatialPresence {
     const wasActive=Boolean(window.PinkVision.active);
     try{
       if(!wasActive){await window.PinkVision.start();this.startedCamera=true}
-      this.runtime.spatial.setCameraPermission('granted');await this.ensureLandmarker();this.active=true;this.error=null;this.raf=requestAnimationFrame(t=>this.loop(t));return true;
+      this.runtime.spatial.setCameraPermission('granted');await this.ensureLandmarker();this.active=true;this.error=null;this.raf=globalThis.requestAnimationFrame?.(t=>this.loop(t))||0;return true;
     }catch(error){
       this.error=String(error?.message||error);this.runtime.spatial.setCameraPermission(error?.name==='NotAllowedError'?'denied':'stopped');
       if(this.startedCamera){window.PinkVision?.stop?.();this.startedCamera=false}
@@ -39,7 +39,7 @@ export class PinkSpatialPresence {
     }
   }
   loop(now){
-    if(!this.active)return;this.raf=requestAnimationFrame(t=>this.loop(t));
+    if(!this.active)return;this.raf=globalThis.requestAnimationFrame?.(t=>this.loop(t))||0;
     if(document.hidden||this.busy||now-this.last<66)return;
     const video=this.videoResolver();if(!video||video.readyState<2||!this.landmarker)return;
     this.last=now;this.busy=true;
@@ -50,7 +50,7 @@ export class PinkSpatialPresence {
     finally{this.busy=false}
   }
   disable({stopCamera=true}={}){
-    this.active=false;cancelAnimationFrame(this.raf);this.raf=0;this.runtime.spatial.setCameraPermission('stopped');this.baselineWidth=null;
+    this.active=false;globalThis.cancelAnimationFrame?.(this.raf);this.raf=0;this.runtime.spatial.setCameraPermission('stopped');this.baselineWidth=null;
     if(stopCamera&&this.startedCamera){window.PinkVision?.stop?.();this.startedCamera=false}
   }
   destroy(){this.disable({stopCamera:true});try{this.landmarker?.close?.()}catch(_){}this.landmarker=null}
