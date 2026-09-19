@@ -10,7 +10,7 @@ async function smoke(browser,name,options){
   await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:20000});
   await page.waitForFunction(()=>Boolean(window.PinkNext?.snapshot),null,{timeout:10000});
   const runtime=await page.evaluate(()=>window.PinkNext.snapshot());
-  assert.equal(runtime.version,'next-0.12.0',`${name}: Pink Next runtime version mismatch`);
+  assert.equal(runtime.version,'next-0.13.0',`${name}: Pink Next runtime version mismatch`);
   assert.ok(runtime.projectBrains?.adapters?.includes('graphiti'),`${name}: Project Brain Graphiti adapter missing`);
   assert.ok(runtime.modelLab?.adapters?.includes('minimind'),`${name}: Training Studio MiniMind adapter missing`);
   assert.ok(runtime.agentLearning?.adapters?.includes('agent-lightning'),`${name}: Agent Learning Agent Lightning adapter missing`);
@@ -25,6 +25,8 @@ async function smoke(browser,name,options){
   await page.click('#spatial-quality');
   const afterQuality=await page.evaluate(()=>window.PinkNext.spatial.snapshot().quality);
   assert.notEqual(afterQuality,beforeQuality,`${name}: spatial quality control did not change kernel`);
+  assert.ok(await page.locator('#spatial-camera').isVisible(),`${name}: spatial camera control missing`);
+  assert.equal(await page.locator('#spatial-camera').getAttribute('aria-pressed'),'false',`${name}: camera must be opt-in`);
   const links=await page.locator('.spatial-link').count();
   assert.ok(links>=6,`${name}: spatial network links missing`);
   assert.ok(runtime.satellite&&runtime.satellite.endpoint.includes('127.0.0.1'),`${name}: Satellite client missing`);
