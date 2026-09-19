@@ -1,4 +1,13 @@
-import * as THREE from 'three';
+async function loadThreeSafe(){
+  try{
+    const timeout=new Promise((_,reject)=>setTimeout(()=>reject(new Error('three.js load timeout')),8000));
+    return await Promise.race([import('three'),timeout]);
+  }catch(error){
+    console.warn('Pink orbital: three.js unavailable, using CSS fallback orb.',error);
+    return null;
+  }
+}
+const THREE = await loadThreeSafe();
 
 const stage = document.querySelector('#pinkStage');
 if (!stage || window.PinkOrbConsole) {
@@ -121,6 +130,7 @@ if (!stage || window.PinkOrbConsole) {
     let renderer=null,raf=0,ro=null,lastFrame=0;
     const maxFps=reducedMotion?12:Math.max(24,Math.min(60,Number(performanceProfile.maxFps)||30));
     try{
+      if(!THREE)throw new Error('Three.js indisponível (offline ou bloqueado)');
       renderer=new THREE.WebGLRenderer({canvas,antialias:performanceProfile.tier==='high',alpha:true,powerPreference:performanceProfile.tier==='high'?'high-performance':'low-power'});
       renderer.setClearColor(0x000000,0);renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,Number(performanceProfile.maxDpr)||1.25,1.6));renderer.outputColorSpace=THREE.SRGBColorSpace;
       const scene=new THREE.Scene();const camera=new THREE.PerspectiveCamera(42,1,.1,100);camera.position.z=7.1;
