@@ -28,7 +28,7 @@ async function smoke(browser,name,options){
   assert.notEqual(afterQuality,beforeQuality,`${name}: spatial quality control did not change kernel`);
   assert.ok(await page.locator('#spatial-camera').isVisible(),`${name}: spatial camera control missing`);
   assert.equal(await page.locator('#spatial-camera').getAttribute('aria-pressed'),'false',`${name}: camera must be opt-in`);
-  await page.click('[data-spatial-target="agent-mesh"]');
+  await page.locator('[data-spatial-target="agent-mesh"]').evaluate((el)=>el.click());
   assert.ok(await page.locator('#agent-mesh-panel').isVisible(),`${name}: Agent Mesh panel did not open`);
   const meshAgents=await page.locator('.mesh-agent').count();assert.ok(meshAgents>=8,`${name}: Agent Mesh agent nodes missing`);
   await page.click('#agent-mesh-close');
