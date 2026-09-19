@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "library": "Pink Science Library",
+  "principle": "NO EVIDENCE -> NO CLAIM",
+  "domains": [
+    {"id":"classical-physics","title":"Física clássica e engenharia","topics":["mecânica","termodinâmica","fluidos","eletromagnetismo","óptica"],"level":"established"},
+    {"id":"relativity","title":"Relatividade","topics":["relatividade especial","relatividade geral","geodésicas","Schwarzschild","Kerr","ondas gravitacionais"],"level":"established"},
+    {"id":"quantum","title":"Física quântica","topics":["mecânica quântica","informação quântica","emaranhamento","teletransporte quântico","física de partículas"],"level":"established-and-research"},
+    {"id":"space","title":"Ciências espaciais","topics":["mecânica orbital","astrofísica","cosmologia","exoplanetas","asteroides","heliophysics"],"level":"established-and-research"},
+    {"id":"frontier","title":"Fronteiras e hipóteses","topics":["gravidade quântica","wormholes","warp metrics","technosignatures","astrobiologia"],"level":"hypothesis-or-research"}
+  ],
+  "sources": [
+    {"id":"nasa-science-data","authority":"NASA","url":"https://science.data.nasa.gov/","kind":"official-data-portal","domains":["space","classical-physics"],"trust":"primary"},
+    {"id":"nasa-astrophysics","authority":"NASA","url":"https://science.nasa.gov/astrophysics/data/","kind":"official-archive-index","domains":["space","relativity"],"trust":"primary"},
+    {"id":"cern-open-data","authority":"CERN","url":"https://opendata.cern.ch/","kind":"official-open-data","domains":["quantum"],"trust":"primary"},
+    {"id":"gaia-archive","authority":"ESA","url":"https://gea.esac.esa.int/archive/","kind":"official-mission-archive","domains":["space"],"trust":"primary"},
+    {"id":"gwosc","authority":"LIGO/Virgo/KAGRA","url":"https://gwosc.org/","kind":"official-open-science","domains":["relativity","space"],"trust":"primary"}
+  ],
+  "evidenceClasses": ["established-law","experimental-data","peer-reviewed","official-dataset","simulation","preprint","hypothesis","unverified-claim"],
+  "teachingLevels": ["iniciante","intermediario","universitario","especialista"],
+  "rules": [
+    "Never present a hypothesis as an established fact.",
+    "Every scientific claim retrieved from the library must preserve provenance.",
+    "Prefer primary official datasets and peer-reviewed literature.",
+    "Alien or UFO claims must be classified as unverified unless supported by reproducible scientific evidence.",
+    "Simulation output is not experimental confirmation.",
+    "For calculations, preserve units, assumptions, constants and uncertainty."
+  ]
+}
