@@ -143,6 +143,10 @@ jobs:
         run: node tests/pink-next-living-spatial.mjs
       - name: Pink V24 Camera Spatial Presence contracts
         run: node tests/pink-next-camera-spatial-presence.mjs
+      - name: Pink V25 Agent Mesh contracts
+        run: node tests/pink-next-agent-mesh.mjs
+      - name: Pink V25 Agent Mesh Spatial UI contracts
+        run: node tests/pink-next-agent-mesh-ui.mjs
 
   satellite-windows:
     needs: runtime-checks
