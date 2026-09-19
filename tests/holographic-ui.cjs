@@ -27,7 +27,7 @@ assert.match(css, /studio-panel\{display:none!important\}/, 'PINK ONLY must hide
 assert.match(css, /pink-hud-card/, 'HUD visual cards missing');
 assert.match(css, /prefers-reduced-motion/, 'reduced motion handling missing');
 
-assert.match(orb, /const VERSION='1\.2\.0'/, 'orbital command center version missing');
+assert.match(orb, /const VERSION='1\.3\.0'/, 'orbital command center version missing');
 assert.match(orb, /window\.PinkCore\?\.projects/, 'orbital projects must come from Pink project registry');
 assert.match(orb, /window\.PinkCore\?\.openProject/, 'orbital project activation must use PinkCore');
 assert.match(orb, /@mediapipe\/tasks-vision@\$\{MP_VERSION\}/, 'pinned MediaPipe module source missing');
@@ -54,7 +54,7 @@ assert.strictEqual(mediaPipe.license, 'Apache-2.0', 'MediaPipe license record mi
 
 assert.match(html, /pink-holographic-ui\.css\?v=3\.4\.3/, 'HUD styles not wired at current CSS version');
 assert.match(html, /pink-holographic-ui\.js\?v=3\.4\.2/, 'HUD runtime not wired');
-assert.match(html, /pink-orb-console\.css\?v=1\.2\.0/, 'orbital styles are not wired at v1.2.0');
-assert.match(html, /pink-orb-console\.mjs\?v=1\.2\.0/, 'orbital runtime is not wired at v1.2.0');
+assert.match(html, /pink-orb-console\.css\?v=1\.3\.0/, 'orbital styles are not wired at v1.3.0');
+assert.match(html, /pink-orb-console\.mjs\?v=1\.3\.0/, 'orbital runtime is not wired at v1.3.0');
 
 console.log('Pink holographic + orbital UI contract: OK');

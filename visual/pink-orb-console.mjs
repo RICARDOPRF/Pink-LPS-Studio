@@ -13,7 +13,7 @@ const stage = document.querySelector('#pinkStage');
 if (!stage || window.PinkOrbConsole) {
   // no-op
 } else {
-  const VERSION='1.2.0';
+  const VERSION='1.3.0';
   const MP_VERSION='1.0.1';
   const MP_MODULE=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/+esm`;
   const MP_WASM=`https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@${MP_VERSION}/wasm`;
@@ -46,6 +46,10 @@ if (!stage || window.PinkOrbConsole) {
       <div class="pink-orb-status-secondary"><div class="pink-orb-status-copy"><small>ORBITAL COMMAND CENTER</small><strong id="pinkOrbProjectStatus">Projetos LPS em órbita</strong></div></div>
     </div>
     <div class="pink-orb-stage-wrap" id="pinkOrbStageWrap">
+      <div class="pink-orb-tick-ring pink-orb-tick-ring--outer" aria-hidden="true"></div>
+      <div class="pink-orb-tick-ring pink-orb-tick-ring--inner" aria-hidden="true"></div>
+      <div class="pink-orb-sweep" aria-hidden="true"></div>
+      <div class="pink-orb-hud-frame" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
       <button type="button" class="pink-orb-stage-btn" id="pinkOrbStageBtn" aria-label="Falar com a Pink">
         <span class="pink-orb-canvas-wrap"><canvas id="pinkOrbCanvas" aria-hidden="true"></canvas></span>
         <span class="pink-orb-core-badge"><b>LPS</b><small>LEAN PERFORMANCE SOLUTIONS</small></span>
@@ -148,6 +152,17 @@ if (!stage || window.PinkOrbConsole) {
         {r:2.54,t:.012,color:0xec4899,rot:[-.62,.78,.15]},
         {r:2.92,t:.009,color:0x8b5cf6,rot:[.34,-.9,.55]}
       ].map((d,i)=>{const m=new THREE.Mesh(new THREE.TorusGeometry(d.r,d.t,10,160),new THREE.MeshBasicMaterial({color:d.color,transparent:true,opacity:i===2?.32:.55,blending:THREE.AdditiveBlending,depthWrite:false}));m.rotation.set(...d.rot);world.add(m);return m});
+      function buildDashedRing(radius,dashSize,gapSize,color,tiltX,tiltZ,opacity){
+        const segments=128,points=[];
+        for(let i=0;i<=segments;i++){const a=(i/segments)*Math.PI*2;points.push(new THREE.Vector3(Math.cos(a)*radius,0,Math.sin(a)*radius))}
+        const geo=new THREE.BufferGeometry().setFromPoints(points);
+        const mat=new THREE.LineDashedMaterial({color,dashSize,gapSize,transparent:true,opacity});
+        const loop=new THREE.LineLoop(geo,mat);loop.computeLineDistances();loop.rotation.set(tiltX,0,tiltZ);
+        return loop;
+      }
+      const hudRingA=buildDashedRing(2.05,.16,.1,0x9be9ff,Math.PI/2.15,.22,.58);
+      const hudRingB=buildDashedRing(2.3,.1,.16,0xff8fd1,Math.PI/2.4,-.4,.42);
+      world.add(hudRingA,hudRingB);
       const count=performanceProfile.tier==='high'?720:420,positions=new Float32Array(count*3);
       for(let i=0;i<count;i++){const u=Math.random(),v=Math.random(),theta=u*Math.PI*2,phi=Math.acos(2*v-1),r=2.2+Math.random()*2.35;positions.set([r*Math.sin(phi)*Math.cos(theta),r*Math.sin(phi)*Math.sin(theta),r*Math.cos(phi)],i*3)}
       const pGeo=new THREE.BufferGeometry();pGeo.setAttribute('position',new THREE.BufferAttribute(positions,3));const pMat=new THREE.PointsMaterial({size:.032,color:0x68ddff,transparent:true,opacity:.58,depthWrite:false,blending:THREE.AdditiveBlending});const particles=new THREE.Points(pGeo,pMat);world.add(particles);
@@ -162,6 +177,7 @@ if (!stage || window.PinkOrbConsole) {
         globeGroup.scale.setScalar(breath*p.scale);globeGroup.rotation.y+=p.speed*motion;globeGroup.rotation.x=Math.sin(t*.24)*.035*motion;
         world.rotation.y+=(interaction.x*.13-world.rotation.y)*.035;world.rotation.x+=(-interaction.y*.09-world.rotation.x)*.035;
         orbits[0].rotation.z+=p.speed*1.2*motion;orbits[1].rotation.z-=p.speed*1.45*motion;orbits[2].rotation.y+=p.speed*.72*motion;particles.rotation.y+=p.speed*.15*motion;
+        hudRingA.rotation.y+=p.speed*1.9*motion;hudRingB.rotation.y-=p.speed*1.35*motion;
         latitude.forEach((ring,i)=>{ring.material.opacity=(i===2?.32:.16)+p.scale*.06});nodes.forEach((node,i)=>node.scale.setScalar(.8+Math.sin(t*1.5+i)*.28));
         wireMat.color.lerp(new THREE.Color(p.wire),.06);pMat.color.lerp(new THREE.Color(p.particle),.06);globeMat.color.lerp(new THREE.Color(p.core),.025);halo.material.color.lerp(new THREE.Color(p.core),.04);
         camera.position.x+=(interaction.x*.2-camera.position.x)*.035;camera.position.y+=(-interaction.y*.14-camera.position.y)*.035;camera.lookAt(0,0,0);
