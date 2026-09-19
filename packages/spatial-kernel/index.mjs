@@ -14,6 +14,11 @@ export class PinkSpatialKernel{
     const item=Object.freeze({id,label,kind:clean(input.kind||'app',80),action:clean(input.action||'focus',80),projectId:clean(input.projectId,180)||null,enabled:input.enabled!==false});
     this.targets.set(id,item);return structuredClone(item);
   }
+  setQuality(value){
+    if(!Object.values(SpatialQuality).includes(value))throw new TypeError('invalid spatial quality');
+    this.quality=value;return this.snapshot();
+  }
+  setReducedMotion(value){this.reducedMotion=Boolean(value);return this.snapshot();}
   setPointer({x=0,y=0,source=SpatialInput.POINTER}={}){
     if(![SpatialInput.POINTER,SpatialInput.TOUCH,SpatialInput.KEYBOARD].includes(source))throw new TypeError('invalid pointer source');
     this.pose={x:clamp(Number(x)||0,-1,1),y:clamp(Number(y)||0,-1,1),z:0,source,confidence:1};return this.snapshot();
