@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import { PinkScienceLibrary } from '../packages/science-library/index.mjs';
+const lib=new PinkScienceLibrary();
+assert.ok(lib.domains().length>=5);
+assert.ok(lib.sources().some(s=>s.authority==='NASA'));
+assert.ok(lib.sources().some(s=>s.authority==='CERN'));
+assert.equal(lib.classifyEvidence('official-dataset'),'official-dataset');
+assert.throws(()=>lib.classifyEvidence('fact-because-internet'));
+const plan=lib.studyPlan({hours:5,level:'universitario'});
+assert.equal(plan.sessions.length,5);
+assert.equal(plan.assessment.minimumScore,0.8);
+assert.match(lib.teacherPrompt({topic:'relatividade geral'}),/NO EVIDENCE/);
+console.log('Pink Science Library contracts: PASS');

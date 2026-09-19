@@ -1,0 +1,17 @@
+import assert from 'node:assert/strict';
+import { PinkScienceLearningLoop } from '../packages/science-library/learning-loop.mjs';
+import { massEnergy, gravitationalForce, lorentzFactor, schwarzschildRadius } from '../packages/science-library/calculators.mjs';
+const fakeFetch=async()=>({ok:true,text:async()=>'<html>official science dataset index</html>'});
+const loop=new PinkScienceLearningLoop({fetcher:fakeFetch,now:()=> '2026-09-19T00:00:00.000Z'});
+const plan=loop.study({hours:5,level:'universitario'});
+assert.equal(plan.policy.background,false);
+assert.equal(plan.sessions.length,5);
+const ingested=await loop.ingest('cern-open-data');
+assert.equal(ingested.authority,'CERN');
+assert.equal(loop.recordAssessment({domainId:'quantum',score:.85,evidenceRefs:['cern-open-data']}).passed,true);
+assert.match(loop.teacher({topic:'relatividade geral'}).prompt,/rigor científico/);
+assert.ok(Math.abs(massEnergy(1).joules-8.987551787368176e16)<1e4);
+assert.ok(gravitationalForce({mass1Kg:1,mass2Kg:1,distanceM:1}).newtons>6.67e-11);
+assert.equal(lorentzFactor(0),1);
+assert.ok(schwarzschildRadius(1.98847e30).meters>2900);
+console.log('Pink Science Learning Loop: PASS');

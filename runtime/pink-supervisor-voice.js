@@ -2,7 +2,7 @@
 (() => {
   'use strict';
   const $=s=>document.querySelector(s);
-  const MEMORY_TIMEOUT_MS=900;
+  const MEMORY_TIMEOUT_MS=280;
   let recognition=null,active=false,speaking=false,starting=false,lastProvider='nvidia';
   const history=[];
 
@@ -45,7 +45,7 @@
     const memory=await memoryPromise;
     const input=[runtimeNow(),speakerContext,activeProject?`Projeto ativo: ${activeProject}`:'',memory?`Memórias relevantes da Pink:\n${memory}`:'',String(prompt||'')].filter(Boolean).join('\n\n');
     const endpoint=`${String(cfg.url).replace(/\/$/,'')}/functions/v1/pink-brain`;
-    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input,reasoningEffort:complex?'medium':'low',maxOutputTokens:complex?1400:900})});
+    const response=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json',apikey:cfg.anonKey,Authorization:`Bearer ${cfg.anonKey}`},body:JSON.stringify({input,reasoningEffort:complex?'low':'low',maxOutputTokens:complex?900:600})});
     const payload=await response.json().catch(()=>({}));
     if(!response.ok||!payload?.ok){const attempts=Array.isArray(payload?.attempts)?payload.attempts.map(x=>`${x.provider}:${x.error||x.status}`).join(' | '):'';throw new Error(payload?.message||payload?.error||attempts||`Pink Brain HTTP ${response.status}`)}
     const reply=String(payload.reply||'').trim();if(!reply)throw new Error('pink_brain_empty_output');
@@ -124,7 +124,7 @@
       const direct=verifiedReply(operational,result);
       if(direct){history.push({role:'user',content:q},{role:'assistant',content:direct});while(history.length>10)history.shift();add('assistant',direct);await speak(direct);return}
       const opText=result&&result.status==='completed'?`\n\nResultado operacional verificado:\n${JSON.stringify(result).slice(0,3500)}`:result&&result.status==='needs_approval'?`\n\nAção operacional aguardando aprovação do Ricardo.`:'';
-      const recent=history.slice(-4).map(x=>`${x.role}: ${x.content}`).join('\n');
+      const recent=history.slice(-2).map(x=>`${x.role}: ${x.content}`).join('\n');
       const complex=['research','knowledge','software_change','optimization'].includes(operational?.intent);
       const response=await askBrain(`${recent?`Histórico recente:\n${recent}\n\n`:''}Pergunta atual: ${q}${opText}`,{complex,memoryQuery:q});
       const reply=response.reply||'Não encontrei uma resposta disponível.';
