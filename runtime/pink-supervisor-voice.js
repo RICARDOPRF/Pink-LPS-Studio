@@ -54,15 +54,37 @@
     try{window.PinkMemoryCloud?.remember?.({type:'conversation',text:`Pessoa: ${speaker?.name||'não identificada'}\nPergunta: ${memoryQuery||prompt}\nResposta: ${reply}`,importance:.5,source:`pink-brain:${lastProvider}`,data:{speaker:speaker?.name||null,role:speaker?.role||null,provider:lastProvider,model:payload.model||null}}).catch(()=>{})}catch(_){}
     return {reply,provider:lastProvider,model:payload.model||null,usage:payload.usage||null,attempts:payload.attempts||[]};
   }
-  function speak(text){
+  function voiceScore(v){
+    let score=0;const lang=String(v?.lang||''),name=String(v?.name||'');
+    if(/^pt-BR$/i.test(lang))score+=100;else if(/^pt/i.test(lang))score+=60;
+    if(/luciana|francisca|maria|leticia|camila|google.*portugu|microsoft.*portugu/i.test(name))score+=35;
+    if(/compact|eloquence|novelty/i.test(name))score-=25;
+    return score;
+  }
+  function browserSpeak(value){
     return new Promise(resolve=>{
-      const value=String(text||'').trim();if(!value){resolve();return}
-      if(!window.speechSynthesis){resolve();return}
-      speaking=true;try{recognition?.stop?.()}catch(_){}window.speechSynthesis.cancel();
-      const u=new SpeechSynthesisUtterance(value);u.lang='pt-BR';u.rate=1.02;u.pitch=1.02;
-      const voices=window.speechSynthesis.getVoices?.()||[];u.voice=voices.find(v=>/^pt-BR$/i.test(v.lang))||voices.find(v=>/^pt/i.test(v.lang))||null;
-      u.onstart=()=>state('speaking');u.onend=u.onerror=()=>{speaking=false;if(active){state('listening');setTimeout(()=>{try{recognition?.start?.()}catch(_){}},180)}resolve()};window.speechSynthesis.speak(u);
+      if(!window.speechSynthesis){resolve(false);return}
+      window.speechSynthesis.cancel();
+      const u=new SpeechSynthesisUtterance(value);u.lang='pt-BR';u.rate=.96;u.pitch=1;u.volume=1;
+      const voices=(window.speechSynthesis.getVoices?.()||[]).slice().sort((a,b)=>voiceScore(b)-voiceScore(a));u.voice=voices[0]||null;
+      u.onstart=()=>state('speaking','Falando');
+      u.onend=()=>resolve(true);u.onerror=()=>resolve(false);
+      window.speechSynthesis.speak(u);
     });
+  }
+  async function speak(text){
+    const value=window.PinkSpeechText?.clean?window.PinkSpeechText.clean(text,1800):String(text||'').trim().slice(0,1800);if(!value)return;
+    speaking=true;try{recognition?.stop?.()}catch(_){}window.speechSynthesis?.cancel?.();state('speaking','Falando naturalmente');
+    try{
+      if(window.PinkNeuralTTS?.speak){
+        try{await window.PinkNeuralTTS.speak(value);return}
+        catch(error){window.PinkEvolution?.recordIssue?.('neural-tts-fallback',error?.message||error)}
+      }
+      await browserSpeak(value);
+    }finally{
+      speaking=false;
+      if(active){state('listening');setTimeout(()=>{try{recognition?.start?.()}catch(_){}},180)}
+    }
   }
   function shouldExecuteOperational(plan){
     if(!plan?.steps?.length)return false;
@@ -125,7 +147,7 @@
     recognition.onend=()=>{if(active&&!speaking)setTimeout(()=>{try{recognition.start()}catch(_){}},220)};
     try{recognition.start()}catch(_){}active=true;starting=false;render();state('listening');$('#wakeGate')?.setAttribute('hidden','');
   }
-  function stop(){active=false;starting=false;speaking=false;try{recognition?.stop?.()}catch(_){}recognition=null;window.speechSynthesis?.cancel?.();render();state('idle')}
-  function install(){try{window.PinkVoice?.stop?.()}catch(_){}window.PinkSupervisorVoice={start,stop,ask:handle,askBrain,get active(){return active}};render();state('idle');document.addEventListener('click',e=>{const t=e.target?.closest?.('#wakePinkBtn,#callControlBtn,#geminiCallBtn');if(!t)return;e.preventDefault();e.stopImmediatePropagation();active?stop():start()},{capture:true})}
+  function stop(){active=false;starting=false;speaking=false;try{recognition?.stop?.()}catch(_){}recognition=null;window.PinkNeuralTTS?.cancel?.();window.speechSynthesis?.cancel?.();render();state('idle')}
+  function install(){try{window.PinkVoice?.stop?.()}catch(_){}window.PinkSupervisorVoice={start,stop,ask:handle,askBrain,get active(){return active},get voiceProvider(){return window.PinkNeuralTTS?.snapshot?.().provider||'browser-speech-synthesis'}};render();state('idle');document.addEventListener('click',e=>{const t=e.target?.closest?.('#wakePinkBtn,#callControlBtn,#geminiCallBtn');if(!t)return;e.preventDefault();e.stopImmediatePropagation();active?stop():start()},{capture:true})}
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',install,{once:true});else install();
 })();
