@@ -10,10 +10,11 @@ async function smoke(browser,name,options){
   await page.goto(baseUrl,{waitUntil:'domcontentloaded',timeout:20000});
   await page.waitForFunction(()=>Boolean(window.PinkNext?.snapshot),null,{timeout:10000});
   const runtime=await page.evaluate(()=>window.PinkNext.snapshot());
-  assert.equal(runtime.version,'next-0.8.0',`${name}: Pink Next runtime version mismatch`);
+  assert.equal(runtime.version,'next-0.9.0',`${name}: Pink Next runtime version mismatch`);
   assert.ok(runtime.projectBrains?.adapters?.includes('graphiti'),`${name}: Project Brain Graphiti adapter missing`);
   assert.ok(runtime.modelLab?.adapters?.includes('minimind'),`${name}: Training Studio MiniMind adapter missing`);
   assert.ok(runtime.agentLearning?.adapters?.includes('agent-lightning'),`${name}: Agent Learning Agent Lightning adapter missing`);
+  assert.ok(runtime.os?.apps?.some((app)=>app.id==='mission-control'),`${name}: Pink OS Mission Control registry missing`);
   assert.ok(runtime.satellite&&runtime.satellite.endpoint.includes('127.0.0.1'),`${name}: Satellite client missing`);
   assert.match(await page.title(),/Pink LPS Studio Next/i);
   assert.ok(await page.locator('#pink-stage').isVisible(),`${name}: Pink stage hidden`);

@@ -133,6 +133,8 @@ jobs:
         run: node tests/pink-next-model-lab.mjs
       - name: Pink V19 Agent Learning and Agent Lightning contracts
         run: node tests/pink-next-agent-learning.mjs
+      - name: Pink V20 OS Foundation contracts
+        run: node tests/pink-next-os-foundation.mjs
 
   satellite-windows:
     needs: runtime-checks
