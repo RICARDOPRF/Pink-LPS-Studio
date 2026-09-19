@@ -25,6 +25,7 @@ const spatialCoreState = $('#spatial-core-state');
 const spatialQuality = $('#spatial-quality');
 const spatialReducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches || false;
 const spatialLife = { raf:0, startedAt:0, selected:null, lastHud:0, running:false };
+runtime.spatial.setReducedMotion(spatialReducedMotion);
 const productionCloudAllowed = location.origin === 'https://ricardoprf.github.io';
 let lastReply = '';
 let lastProvider = '';
