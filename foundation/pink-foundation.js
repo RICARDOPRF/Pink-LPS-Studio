@@ -18,7 +18,7 @@
   const RISK_ORDER = Object.freeze({ READ_ONLY: 0, REVERSIBLE: 1, EXTERNAL_WRITE: 2, DESTRUCTIVE: 3, PRODUCTION: 4 });
   const TERMINAL = Object.freeze(['completed', 'failed', 'cancelled', 'timeout', 'blocked_external']);
   const ENVIRONMENTS = Object.freeze(['development', 'preview', 'production']);
-  const VOICE_PROVIDERS = Object.freeze(['gemini-live', 'browser', 'local']);
+  const VOICE_PROVIDERS = Object.freeze(['gemini-live', 'gemini-tts', 'browser', 'local']);
 
   function decodeJwtPayload(token) {
     try {
@@ -57,6 +57,10 @@
     if (!VOICE_PROVIDERS.includes(provider)) errors.push(`voice.provider is invalid: ${provider || 'missing'}`);
     if (provider === 'gemini-live') {
       if (!/^models\/[a-z0-9._-]+$/i.test(String(voice.model || ''))) errors.push('voice.model is invalid for Gemini Live');
+      if (!/^[A-Za-z][A-Za-z0-9_-]{1,40}$/.test(String(voice.voiceName || ''))) errors.push('voice.voiceName is invalid');
+    }
+    if (provider === 'gemini-tts') {
+      if (!/^gemini-[a-z0-9._-]*tts[a-z0-9._-]*$/i.test(String(voice.model || ''))) errors.push('voice.model is invalid for Gemini TTS');
       if (!/^[A-Za-z][A-Za-z0-9_-]{1,40}$/.test(String(voice.voiceName || ''))) errors.push('voice.voiceName is invalid');
     }
     if (provider === 'browser' && voice.clientCdn) warnings.push('browser voice should not require a remote client CDN');
