@@ -1,0 +1,15 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const tts=fs.readFileSync('voice/pink-neural-tts.js','utf8');
+const supervisor=fs.readFileSync('runtime/pink-supervisor-voice.js','utf8');
+const settings=fs.readFileSync('voice/pink-voice-settings.js','utf8');
+assert.match(tts,/async function unlock\(/,'unlock API missing');
+assert.match(tts,/audio_context_blocked/,'blocked AudioContext guard missing');
+assert.match(tts,/audio_playback_timeout/,'playback timeout missing');
+assert.match(tts,/pointerdown/,'gesture unlock hook missing');
+assert.match(tts,/touchend/,'touch unlock hook missing');
+assert.match(tts,/version:'1\.2\.0'/,'neural TTS version not bumped');
+assert.match(supervisor,/PinkNeuralTTS\?\.unlock/,'conversation start does not unlock neural audio');
+assert.match(settings,/PinkNeuralTTS\?\.unlock/,'voice preview does not unlock neural audio');
+console.log('Pink iOS neural audio unlock contracts: PASS');

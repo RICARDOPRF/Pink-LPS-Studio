@@ -76,6 +76,8 @@ jobs:
         run: node tests/neural-tts-contract.cjs
       - name: Pink voice library contracts
         run: node tests/voice-library-contract.cjs
+      - name: Pink iOS neural audio unlock contracts
+        run: node tests/ios-audio-unlock-contract.cjs
       - name: Local Companion syntax and safety self-test
         run: |
           python -m py_compile companion/local_voice_service.py companion/satellite_service.py

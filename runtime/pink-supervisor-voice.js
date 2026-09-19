@@ -139,6 +139,7 @@
   function ctor(){return window.SpeechRecognition||window.webkitSpeechRecognition||null}
   async function start(){
     if(active||starting)return;starting=true;render();
+    try{await window.PinkNeuralTTS?.unlock?.()}catch(_){}
     const C=ctor();if(!C){starting=false;render();state('error');add('assistant','Este navegador não oferece reconhecimento de voz. Use Chrome ou Edge.');return}
     try{const s=await navigator.mediaDevices.getUserMedia({audio:true,video:false});s.getTracks().forEach(t=>t.stop())}catch(e){starting=false;render();state('error');add('assistant','Libere o microfone para conversar com a Pink.');return}
     recognition=new C();recognition.lang='pt-BR';recognition.continuous=true;recognition.interimResults=false;
