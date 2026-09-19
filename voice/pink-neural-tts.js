@@ -33,13 +33,17 @@
       try { source.start(); } catch (error) { source = null; reject(error); }
     });
   }
+  function preferredVoice(options={}) {
+    return options.voice || window.PinkVoiceCatalog?.getPreference?.().voice || cfg.voice?.voiceName || 'Aoede';
+  }
   async function speak(input, options = {}) {
     const text = clean(input);
+    const voice = preferredVoice(options);
     if (!text) return { ok:false, skipped:true };
     if (!supabase.url || !supabase.anonKey) throw new Error('pink_tts_config_missing');
     if (busy) cancel();
     busy = true; last.error = null;
-    window.dispatchEvent(new CustomEvent('pinktts:start', { detail:{ provider:'gemini-tts', voice:options.voice || cfg.voice?.voiceName || 'Aoede' } }));
+    window.dispatchEvent(new CustomEvent('pinktts:start', { detail:{ provider:'gemini-tts', voice } }));
     try {
       const response = await fetch(`${String(supabase.url).replace(/\/$/,'')}/functions/v1/${FN}`, {
         method:'POST',
@@ -48,7 +52,7 @@
           apikey:supabase.anonKey,
           Authorization:`Bearer ${supabase.anonKey}`,
         },
-        body:JSON.stringify({ text, voice:options.voice || cfg.voice?.voiceName || 'Aoede' }),
+        body:JSON.stringify({ text, voice }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload?.ok || !payload?.audioBase64) {
@@ -72,6 +76,6 @@
   }
   window.PinkNeuralTTS = Object.freeze({
     version:'1.0.0', provider:'gemini-tts', speak, cancel,
-    snapshot:()=>({ ...last, busy, endpoint:FN, fallback:'browser-speech-synthesis' })
+    snapshot:()=>({ ...last, busy, selectedVoice:preferredVoice(), endpoint:FN, fallback:'browser-speech-synthesis' })
   });
 })();
