@@ -40,6 +40,7 @@ jobs:
           node --check runtime/pink-agent-harness.js
           node --check runtime/pink-supervisor-voice.js
           node --check voice/pink-gemini-live.js
+          node --check voice/pink-neural-tts.js
           node --check vision/pink-vision.js
           node --check vision/pink-camera-router.js
           node --check tools/pink-tool-registry.js
@@ -69,6 +70,8 @@ jobs:
           find packages apps/next -type f -name '*.mjs' -print0 | xargs -0 -n1 node --check
       - name: Natural speech and file reader contracts
         run: node tests/natural-speech-and-files.cjs
+      - name: Pink neural TTS routing contracts
+        run: node tests/neural-tts-contract.cjs
       - name: Local Companion syntax and safety self-test
         run: |
           python -m py_compile companion/local_voice_service.py companion/satellite_service.py
