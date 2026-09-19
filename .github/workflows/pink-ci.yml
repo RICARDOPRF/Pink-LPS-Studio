@@ -24,6 +24,8 @@ jobs:
         run: node scripts/dependency-audit.cjs
       - name: JavaScript syntax
         run: |
+          node --check pink-domain-lock.js
+          node --check pink-anti-copy.js
           node --check pink-public-config.js
           node --check runtime/pink-speech-text.js
           node --check foundation/pink-foundation.js
