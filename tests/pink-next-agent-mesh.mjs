@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+import {PinkAgentMesh,AgentMeshMessageType} from '../packages/agent-mesh/index.mjs';
+const mesh=new PinkAgentMesh();
+assert.ok(mesh.snapshot().nodes.some(x=>x.id==='developer'));
+assert.throws(()=>mesh.recordMessage({type:'FINDING',from:'developer',summary:'x'}),/evidence required/);
+const q=mesh.recordMessage({type:AgentMeshMessageType.QUESTION,from:'research',to:'supervisor',summary:'Need source?'});
+assert.equal(q.type,'QUESTION');
+mesh.sync({traces:[{id:'t1',startedIso:'2026-09-19T00:00:00Z',spans:[{name:'agent:developer',status:'running',startedIso:'2026-09-19T00:00:01Z'}],events:[]}],handoffs:{recent:[{from:'supervisor',to:'developer',accepted:true,createdAt:'2026-09-19T00:00:00Z'}]}});
+const snap=mesh.snapshot();
+assert.equal(snap.nodes.find(x=>x.id==='developer').state,'executing');
+assert.equal(snap.links.length,1);
+const f=mesh.recordMessage({type:'FINDING',from:'developer',to:'supervisor',summary:'Validated change',evidenceRefs:['commit:abc']});
+assert.equal(f.evidenceRefs.length,1);
+console.log('Pink V25 Agent Mesh contracts: PASS');
