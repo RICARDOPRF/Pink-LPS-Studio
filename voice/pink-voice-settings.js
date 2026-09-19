@@ -22,7 +22,7 @@
       const meta=catalog.find(draft);selected.textContent=(meta?.name||draft)+' · '+(meta?.label||'');
     }
     search.addEventListener('input',render);group.addEventListener('change',()=>{state={...state,group:group.value};render()});
-    wrap.querySelector('#pinkVoicePreview').addEventListener('click',async e=>{const btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent='Falando…';try{await window.PinkNeuralTTS?.speak?.(SAMPLE,{voice:draft})}catch(_){btn.textContent='Falha na prévia'}finally{setTimeout(()=>{btn.disabled=false;btn.textContent=old},800)}});
+    wrap.querySelector('#pinkVoicePreview').addEventListener('click',async e=>{const btn=e.currentTarget,old=btn.textContent;btn.disabled=true;btn.textContent='Falando…';try{await window.PinkNeuralTTS?.unlock?.();await window.PinkNeuralTTS?.speak?.(SAMPLE,{voice:draft})}catch(_){btn.textContent='Falha na prévia'}finally{setTimeout(()=>{btn.disabled=false;btn.textContent=old},800)}});
     wrap.querySelector('#pinkVoiceUse').addEventListener('click',()=>{state=catalog.setPreference({voice:draft,group:group.value});selected.textContent=catalog.find(state.voice).name+' · '+catalog.find(state.voice).label;const status=$('#voiceStatus');if(status)status.textContent='Pink Neural Voice · '+state.voice});
     render();
   }
