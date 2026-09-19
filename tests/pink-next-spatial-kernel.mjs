@@ -11,5 +11,6 @@ assert.ok(k.sceneTransform().parallaxX>0);
 k.setCameraPermission('stopped');assert.notEqual(k.snapshot().pose.source,SpatialInput.CAMERA);
 const event=k.selectTarget('agent-mesh',{evidenceRefs:['contract']});assert.equal(event.execute,false);assert.equal(event.targetId,'agent-mesh');
 const lite=new PinkSpatialKernel({quality:SpatialQuality.LITE,reducedMotion:true});lite.setPointer({x:1,y:1,source:SpatialInput.TOUCH});assert.equal(lite.sceneTransform().parallaxX,0);assert.equal(lite.sceneTransform().particleBudget,240);
-assert.throws(()=>new PinkSpatialKernel({quality:'cinema'}),/invalid spatial quality/);
+const before=lite.snapshot().quality;lite.setQuality(SpatialQuality.ULTRA);assert.equal(lite.snapshot().quality,SpatialQuality.ULTRA);assert.notEqual(lite.snapshot().quality,before);lite.setReducedMotion(false);assert.equal(lite.snapshot().reducedMotion,false);
+assert.throws(()=>lite.setQuality('cinema'),/invalid spatial quality/);assert.throws(()=>new PinkSpatialKernel({quality:'cinema'}),/invalid spatial quality/);
 console.log('Pink V21 Spatial Kernel contracts: PASS');
