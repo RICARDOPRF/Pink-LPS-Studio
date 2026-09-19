@@ -135,6 +135,8 @@ jobs:
         run: node tests/pink-next-agent-learning.mjs
       - name: Pink V20 OS Foundation contracts
         run: node tests/pink-next-os-foundation.mjs
+      - name: Pink V21 Spatial Kernel contracts
+        run: node tests/pink-next-spatial-kernel.mjs
 
   satellite-windows:
     needs: runtime-checks
