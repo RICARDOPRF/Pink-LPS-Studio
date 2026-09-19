@@ -21,6 +21,7 @@ export class PinkAgentMesh {
     if(!summary)throw new TypeError('agent mesh message requires summary');
     if(type!==AgentMeshMessageType.QUESTION&&!evidenceRefs.length)throw new Error('evidence required for non-question mesh message');
     const msg=Object.freeze({id:clean(input.id,200)||`meshmsg_${Date.now()}_${this.messages.length+1}`,type,from,to,summary,evidenceRefs,createdAt:input.createdAt?new Date(input.createdAt).toISOString():new Date().toISOString()});
+    if(this.messages.some(x=>x.id===msg.id))return clone(this.messages.find(x=>x.id===msg.id));
     this.messages.push(msg);if(this.messages.length>200)this.messages.shift();return clone(msg);
   }
   sync({traces=[],handoffs=null,orchestration=null}={}){
