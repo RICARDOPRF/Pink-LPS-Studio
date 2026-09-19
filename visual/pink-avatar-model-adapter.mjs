@@ -1,8 +1,24 @@
 // Pink Phase 3.4 — GLB/GLTF/VRM avatar model adapter.
 // Loads the definitive 3D Pink while preserving portrait fallback on any failure.
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';
+let THREE = null, GLTFLoader = null, VRMLoaderPlugin = null, VRMUtils = null;
+async function loadThreeStackSafe() {
+  const withTimeout = (promise, ms = 8000) => Promise.race([
+    promise,
+    new Promise((_, reject) => setTimeout(() => reject(new Error('three.js stack load timeout')), ms))
+  ]);
+  try {
+    THREE = await withTimeout(import('three'));
+    const addons = await withTimeout(import('three/addons/loaders/GLTFLoader.js'));
+    GLTFLoader = addons.GLTFLoader;
+    const vrmModule = await withTimeout(import('@pixiv/three-vrm'));
+    VRMLoaderPlugin = vrmModule.VRMLoaderPlugin;
+    VRMUtils = vrmModule.VRMUtils;
+  } catch (error) {
+    THREE = null; GLTFLoader = null; VRMLoaderPlugin = null; VRMUtils = null;
+    console.warn('Pink avatar model adapter: three.js/VRM stack unavailable; 3D avatar stays disabled and portrait fallback is used.', error);
+  }
+}
+await loadThreeStackSafe();
 
 const MODEL_HOST_SUFFIX = '.supabase.co';
 const MAX_MODEL_BYTES = 55 * 1024 * 1024;
@@ -353,6 +369,7 @@ function fitModel(root, modelGroup, camera, metadata) {
 
 async function load({ stage, url, format, config = {} }) {
   if (!stage) throw new Error('Pink avatar stage is missing');
+  if (!THREE || !GLTFLoader) throw new Error('Pink avatar 3D engine unavailable (three.js failed to load)');
   const modelUrl = validateModelUrl(url);
   const normalizedFormat = String(format || '').toLowerCase();
   if (!['glb', 'gltf', 'vrm'].includes(normalizedFormat)) throw new Error(`Unsupported Pink avatar format: ${normalizedFormat}`);
