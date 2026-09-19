@@ -1,3 +1,4 @@
+import { PinkSpatialPresence } from './spatial-presence.mjs';
 import { createPinkNextRuntime } from '../../packages/next-runtime/index.mjs';
 import { MemoryLayer } from '../../packages/contracts/index.mjs';
 
@@ -23,9 +24,11 @@ const spatialTaskCount = $('#spatial-task-count');
 const spatialAgentCount = $('#spatial-agent-count');
 const spatialCoreState = $('#spatial-core-state');
 const spatialQuality = $('#spatial-quality');
+const spatialCamera = $('#spatial-camera');
 const spatialReducedMotion = globalThis.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches || false;
 const spatialLife = { raf:0, startedAt:0, selected:null, lastHud:0, running:false };
 runtime.spatial.setReducedMotion(spatialReducedMotion);
+const spatialPresence = new PinkSpatialPresence({ runtime });
 const productionCloudAllowed = location.origin === 'https://ricardoprf.github.io';
 let lastReply = '';
 let lastProvider = '';
@@ -192,9 +195,19 @@ function layoutSpatialFrame(now=performance.now()){
   });
   updateSpatialHud();
 }
+function applyCameraPose(){
+  const snap=runtime.spatial.snapshot();if(snap.pose.source!=='camera')return;
+  const t=snap.transform;if(spatialCore){spatialCore.style.transform='translate(calc(-50% + '+(t.parallaxX*150).toFixed(1)+'px),calc(-50% + '+(t.parallaxY*110).toFixed(1)+'px)) translateZ('+(t.depth*140).toFixed(1)+'px)';spatialCore.style.setProperty('--gaze-x',(snap.pose.x*8).toFixed(1)+'px');spatialCore.style.setProperty('--gaze-y',(snap.pose.y*6).toFixed(1)+'px')}
+  if(spatialStatus)spatialStatus.textContent='CAMERA · '+snap.quality.toUpperCase();
+}
+async function toggleSpatialCamera(){
+  if(spatialPresence.active){spatialPresence.disable({stopCamera:true});spatialCamera?.setAttribute('aria-pressed','false');if(spatialCamera)spatialCamera.textContent='CAM OFF';return}
+  if(spatialCamera)spatialCamera.textContent='CAM…';
+  try{await spatialPresence.enable();spatialCamera?.setAttribute('aria-pressed','true');if(spatialCamera)spatialCamera.textContent='CAM ON'}catch(_){if(spatialCamera)spatialCamera.textContent='CAM ERR'}
+}
 function spatialLoop(now){
   if(!spatialLife.running)return;
-  if(shell.dataset.spatial==='on'&&!document.hidden)layoutSpatialFrame(now);
+  if(shell.dataset.spatial==='on'&&!document.hidden){layoutSpatialFrame(now);applyCameraPose();}
   spatialLife.raf=requestAnimationFrame(spatialLoop);
 }
 function startSpatialLife(){
@@ -338,7 +351,10 @@ spatialToggle?.addEventListener('click',()=>{const on=shell.dataset.spatial!=='o
 spatialStage?.addEventListener('pointermove',setSpatialPointer,{passive:true});
 spatialStage?.addEventListener('pointerleave',()=>{runtime.spatial.setPointer({x:0,y:0});if(spatialCore)spatialCore.style.transform='translate(-50%,-50%)';},{passive:true});
 spatialQuality?.addEventListener('click',cycleSpatialQuality);
+spatialCamera?.addEventListener('click',toggleSpatialCamera);
 document.addEventListener('visibilitychange',()=>{if(document.hidden){cancelAnimationFrame(spatialLife.raf);spatialLife.raf=0}else if(spatialLife.running&&!spatialLife.raf)spatialLife.raf=requestAnimationFrame(spatialLoop)});
+
+window.addEventListener('pagehide',()=>spatialPresence.destroy(),{once:true});
 
 modeToggle.addEventListener('click', () => {
   const next = shell.dataset.mode === 'pink-only' ? 'command-center' : 'pink-only';
