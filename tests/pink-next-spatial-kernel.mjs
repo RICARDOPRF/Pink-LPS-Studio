@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {PinkSpatialKernel,SpatialQuality,SpatialInput,createPinkSpatialKernel} from '../packages/spatial-kernel/index.mjs';
+const k=createPinkSpatialKernel({quality:SpatialQuality.BALANCED});
+assert.equal(k.snapshot().targets.length,7);
+assert.equal(k.snapshot().cameraPermission,'not-requested');
+assert.throws(()=>k.setHeadPose({x:.2,confidence:.9}),/permission required/);
+k.setCameraPermission('granted');
+k.setHeadPose({x:.5,y:-.25,z:.4,confidence:.9});
+assert.equal(k.snapshot().pose.source,SpatialInput.CAMERA);
+assert.ok(k.sceneTransform().parallaxX>0);
+k.setCameraPermission('stopped');assert.notEqual(k.snapshot().pose.source,SpatialInput.CAMERA);
+const event=k.selectTarget('agent-mesh',{evidenceRefs:['contract']});assert.equal(event.execute,false);assert.equal(event.targetId,'agent-mesh');
+const lite=new PinkSpatialKernel({quality:SpatialQuality.LITE,reducedMotion:true});lite.setPointer({x:1,y:1,source:SpatialInput.TOUCH});assert.equal(lite.sceneTransform().parallaxX,0);assert.equal(lite.sceneTransform().particleBudget,240);
+assert.throws(()=>new PinkSpatialKernel({quality:'cinema'}),/invalid spatial quality/);
+console.log('Pink V21 Spatial Kernel contracts: PASS');
