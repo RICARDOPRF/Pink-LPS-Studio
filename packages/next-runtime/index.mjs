@@ -21,6 +21,7 @@ import { PinkTrainingStudio } from '../model-lab/index.mjs';
 import { MiniMindAdapter } from '../model-lab/minimind-adapter.mjs';
 import { PinkAgentLearningStudio } from '../agent-learning/index.mjs';
 import { AgentLightningAdapter } from '../agent-learning/agent-lightning-adapter.mjs';
+import { createPinkOSFoundation } from '../os-foundation/index.mjs';
 
 export function createPinkNextRuntime({ config = {}, storage = null, satelliteStorage = globalThis.sessionStorage } = {}) {
   const taskRuntime = new TaskRuntime({ storage });
@@ -45,6 +46,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   modelLab.registerAdapter('minimind', new MiniMindAdapter());
   const agentLearning = new PinkAgentLearningStudio();
   agentLearning.registerAdapter('agent-lightning', new AgentLightningAdapter());
+  const os = createPinkOSFoundation();
 
   async function restoreSatellite() {
     const device = await satellite.restore();
@@ -72,7 +74,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.8.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab, agentLearning,
+    version: 'next-0.9.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab, agentLearning, os,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
       return {
@@ -90,6 +92,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
         projectBrains: projectBrains.snapshot(),
         modelLab: modelLab.snapshot(),
         agentLearning: agentLearning.snapshot(),
+        os: os.snapshot(),
         evolution: evolution.list()
       };
     }
