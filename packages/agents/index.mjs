@@ -1,7 +1,7 @@
 import { RiskLevel } from '../contracts/index.mjs';
 
 export const AgentRole = Object.freeze({
-  SUPERVISOR:'supervisor', RESEARCH:'research', DEVELOPER:'developer', QA:'qa', SECURITY:'security', BROWSER:'browser', DESKTOP:'desktop'
+  SUPERVISOR:'supervisor', RESEARCH:'research', DEVELOPER:'developer', QA:'qa', SECURITY:'security', BROWSER:'browser', DESKTOP:'desktop', VERIFIER:'verifier'
 });
 
 export const DEFAULT_AGENT_POLICIES = Object.freeze({
@@ -10,7 +10,8 @@ export const DEFAULT_AGENT_POLICIES = Object.freeze({
   [AgentRole.QA]: { maxRisk: RiskLevel.LOW, tools: [] },
   [AgentRole.SECURITY]: { maxRisk: RiskLevel.READ_ONLY, tools: [] },
   [AgentRole.BROWSER]: { maxRisk: RiskLevel.MEDIUM, tools: [] },
-  [AgentRole.DESKTOP]: { maxRisk: RiskLevel.MEDIUM, tools: [] }
+  [AgentRole.DESKTOP]: { maxRisk: RiskLevel.MEDIUM, tools: [] },
+  [AgentRole.VERIFIER]: { maxRisk: RiskLevel.READ_ONLY, tools: [] }
 });
 
 export class PinkSupervisor {

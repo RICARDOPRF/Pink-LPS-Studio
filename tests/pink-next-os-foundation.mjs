@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import { RiskLevel } from '../packages/contracts/index.mjs';
+import { PinkOSRegistry, createPinkOSFoundation } from '../packages/os-foundation/index.mjs';
+
+const os=createPinkOSFoundation();
+const snap=os.snapshot();
+assert.ok(snap.apps.some(x=>x.id==='mission-control'));
+assert.ok(snap.apps.some(x=>x.id==='agent-mesh'));
+assert.ok(snap.apps.some(x=>x.id==='evolution-lab'));
+assert.ok(snap.capabilities.some(x=>x.id==='observe'&&x.risk===RiskLevel.READ_ONLY));
+const read=os.planAction({appId:'mission-control',capabilityId:'observe',projectId:'demo',objective:'Inspect state',evidenceRefs:['test']});
+assert.equal(read.execute,false);
+assert.equal(read.requiresApproval,false);
+const governed=os.planAction({appId:'agent-mesh',capabilityId:'delegate',projectId:'demo',objective:'Delegate analysis',evidenceRefs:['test']});
+assert.equal(governed.execute,false);
+assert.equal(governed.requiresApproval,true);
+assert.equal(governed.risk,RiskLevel.MEDIUM);
+assert.throws(()=>os.registerApp({id:'bad',title:'Bad',capabilityIds:['missing']}),/unknown capability/);
+assert.throws(()=>os.planAction({capabilityId:'missing'}),/not registered/);
+const isolated=new PinkOSRegistry();
+isolated.registerCapability({id:'critical',title:'Critical',risk:RiskLevel.CRITICAL,evidenceRefs:['test']});
+const critical=isolated.planAction({capabilityId:'critical',objective:'Protected operation'});
+assert.equal(critical.execute,false);
+assert.equal(critical.requiresApproval,true);
+console.log('Pink V20 OS Foundation contracts: PASS');

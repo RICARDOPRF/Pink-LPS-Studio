@@ -7,10 +7,23 @@ import { SkillRegistry } from '../skills/index.mjs';
 import { TraceStore } from '../observability/index.mjs';
 import { constraints, approvals } from '../security/index.mjs';
 import { PinkSupervisor } from '../agents/index.mjs';
+import { AgenticExecutionKernel } from '../agentic-runtime/index.mjs';
+import { createDefaultGuardrails } from '../guardrails/index.mjs';
+import { HandoffBroker } from '../handoffs/index.mjs';
+import { MultiAgentOrchestrator } from '../orchestrator/index.mjs';
 import { EvolutionEngine } from '../evolution/index.mjs';
 import { SatelliteRegistry } from '../satellite/index.mjs';
 import { PinkSatelliteClient } from '../satellite/client.mjs';
 import { createLegacyCloudAdapter } from '../adapters/legacy-cloud.mjs';
+import { ProjectBrainRegistry } from '../project-brain/index.mjs';
+import { GraphitiProjectBrainAdapter } from '../project-brain/graphiti-adapter.mjs';
+import { PinkTrainingStudio } from '../model-lab/index.mjs';
+import { MiniMindAdapter } from '../model-lab/minimind-adapter.mjs';
+import { PinkAgentLearningStudio } from '../agent-learning/index.mjs';
+import { AgentLightningAdapter } from '../agent-learning/agent-lightning-adapter.mjs';
+import { createPinkOSFoundation } from '../os-foundation/index.mjs';
+import { createPinkSpatialKernel } from '../spatial-kernel/index.mjs';
+import { PinkAgentMesh } from '../agent-mesh/index.mjs';
 
 export function createPinkNextRuntime({ config = {}, storage = null, satelliteStorage = globalThis.sessionStorage } = {}) {
   const taskRuntime = new TaskRuntime({ storage });
@@ -23,8 +36,21 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   const satellite = new PinkSatelliteClient({ storage: satelliteStorage });
   const cloud = createLegacyCloudAdapter(config);
   const security = { constraints, approvals };
+  const guardrails = createDefaultGuardrails();
+  const handoffs = new HandoffBroker({ guardrails, traces });
   const supervisor = new PinkSupervisor({ taskRuntime, tools, contextCompiler, memory, security, traces });
+  const agentic = new AgenticExecutionKernel({ taskRuntime, tools, security, traces, contextCompiler, memory, guardrails, handoffs });
+  const orchestrator = new MultiAgentOrchestrator({ agentic, handoffs, traces, taskRuntime });
   const evolution = new EvolutionEngine({ traces });
+  const projectBrains = new ProjectBrainRegistry();
+  projectBrains.registerAdapter('graphiti', new GraphitiProjectBrainAdapter());
+  const modelLab = new PinkTrainingStudio();
+  modelLab.registerAdapter('minimind', new MiniMindAdapter());
+  const agentLearning = new PinkAgentLearningStudio();
+  agentLearning.registerAdapter('agent-lightning', new AgentLightningAdapter());
+  const os = createPinkOSFoundation();
+  const spatial = createPinkSpatialKernel();
+  const agentMesh = new PinkAgentMesh();
 
   async function restoreSatellite() {
     const device = await satellite.restore();
@@ -52,9 +78,10 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.3.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, supervisor, evolution,
+    version: 'next-0.14.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab, agentLearning, os, spatial, agentMesh,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
+      const agentMeshSnapshot = agentMesh.sync({ traces:traces.list(), handoffs:handoffs.snapshot(), orchestration:orchestrator.snapshot() });
       return {
         version: this.version,
         cloudConfigured: cloud.configured,
@@ -63,6 +90,16 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
         skills: skills.list(),
         satellites: satellites.list(),
         satellite: satellite.snapshot(),
+        handoffs: handoffs.snapshot(),
+        guardrails: guardrails.snapshot(),
+        agenticProfile: agentic.sandbox.profile,
+        orchestration: orchestrator.snapshot(),
+        projectBrains: projectBrains.snapshot(),
+        modelLab: modelLab.snapshot(),
+        agentLearning: agentLearning.snapshot(),
+        os: os.snapshot(),
+        spatial: spatial.snapshot(),
+        agentMesh: agentMeshSnapshot,
         evolution: evolution.list()
       };
     }
