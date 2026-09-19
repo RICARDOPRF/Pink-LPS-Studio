@@ -3,6 +3,7 @@
 body.pink-orbital-mode .workspace{grid-template-columns:1fr}
 body.pink-orbital-mode .assistant-panel{min-height:auto}
 body.pink-orbital-mode .studio-panel{margin-top:2px}
+body.pink-orbital-mode .assistant-copy,body.pink-orbital-mode .status-grid,body.pink-orbital-mode .voice-box{display:none}
 .pink-stage.pink-orb-screen{aspect-ratio:16/9;min-height:560px;max-height:760px;background:radial-gradient(circle at 50% 45%,rgba(38,137,255,.2),rgba(18,9,46,.7) 48%,rgba(3,8,18,.99) 82%);overflow:hidden;border-color:rgba(94,232,255,.24);box-shadow:0 30px 100px rgba(0,0,0,.5),0 0 100px rgba(76,201,255,.08),inset 0 0 90px rgba(139,92,246,.045)}
 .pink-stage.pink-orb-screen>.stage-vignette{background:radial-gradient(circle at center,transparent 43%,rgba(2,9,20,.14) 68%,rgba(1,5,12,.78) 100%);z-index:1}
 .pink-stage.pink-orb-screen>.scanline{opacity:.12;z-index:3}
