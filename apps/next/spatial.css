@@ -23,3 +23,4 @@
 @keyframes spatialDrift{from{transform:translate3d(0,0,0) scale(.8)}to{transform:translate3d(var(--dx,20px),var(--dy,-18px),0) scale(1.35)}}
 @media(max-width:700px){.spatial-hud{left:7px;top:7px;gap:4px}.spatial-hud>div{min-width:48px;padding:5px 6px}.spatial-quality{min-width:60px;padding:5px 6px}.spatial-hud strong{font-size:8px}.spatial-hud small{font-size:4px}}
 @media(prefers-reduced-motion:reduce){.spatial-core-pulse,.spatial-particle{animation:none!important}.spatial-node{transition:border-color .18s,box-shadow .18s!important}}
+.spatial-core:after{transform:translate(var(--gaze-x,0),var(--gaze-y,0))}.spatial-quality[aria-pressed="true"]{border-color:rgba(52,211,153,.55);color:#86efac;box-shadow:0 0 18px rgba(52,211,153,.14)}
