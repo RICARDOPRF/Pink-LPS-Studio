@@ -15,6 +15,11 @@ async function smoke(browser,name,options){
   assert.ok(runtime.modelLab?.adapters?.includes('minimind'),`${name}: Training Studio MiniMind adapter missing`);
   assert.ok(runtime.agentLearning?.adapters?.includes('agent-lightning'),`${name}: Agent Learning Agent Lightning adapter missing`);
   assert.ok(runtime.os?.apps?.some((app)=>app.id==='mission-control'),`${name}: Pink OS Mission Control registry missing`);
+  assert.ok(runtime.spatial?.targets?.some((x)=>x.id==='agent-mesh'),`${name}: spatial targets missing`);
+  await page.click('#spatial-toggle');
+  await page.waitForSelector('#spatial-stage:not([hidden])');
+  const spatialNodes=await page.locator('.spatial-node').count();
+  assert.ok(spatialNodes>=6,`${name}: spatial mission control nodes missing`);
   assert.ok(runtime.satellite&&runtime.satellite.endpoint.includes('127.0.0.1'),`${name}: Satellite client missing`);
   assert.match(await page.title(),/Pink LPS Studio Next/i);
   assert.ok(await page.locator('#pink-stage').isVisible(),`${name}: Pink stage hidden`);

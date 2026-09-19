@@ -76,7 +76,7 @@ export function createPinkNextRuntime({ config = {}, storage = null, satelliteSt
   }
 
   const runtime = {
-    version: 'next-0.10.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab, agentLearning, os, spatial,
+    version: 'next-0.11.0', eventBus, taskRuntime, memory, contextCompiler, tools, skills, traces, satellites, satellite, cloud, security, guardrails, handoffs, supervisor, agentic, orchestrator, evolution, projectBrains, modelLab, agentLearning, os, spatial,
     restoreSatellite, pairSatellite, disconnectSatellite,
     snapshot() {
       return {

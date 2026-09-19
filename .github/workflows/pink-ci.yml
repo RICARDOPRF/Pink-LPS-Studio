@@ -137,6 +137,8 @@ jobs:
         run: node tests/pink-next-os-foundation.mjs
       - name: Pink V21 Spatial Kernel contracts
         run: node tests/pink-next-spatial-kernel.mjs
+      - name: Pink V22 Spatial Mission Control contracts
+        run: node tests/pink-next-spatial-mission-control.mjs
 
   satellite-windows:
     needs: runtime-checks

@@ -12,6 +12,10 @@ const prompt = $('#prompt');
 const shell = $('.app-shell');
 const health = $('#health-strip');
 const modeToggle = $('#mode-toggle');
+const spatialToggle = $('#spatial-toggle');
+const spatialStage = $('#spatial-stage');
+const spatialOrbit = $('#spatial-orbit');
+const spatialStatus = $('#spatial-status');
 const productionCloudAllowed = location.origin === 'https://ricardoprf.github.io';
 let lastReply = '';
 let lastProvider = '';
@@ -109,6 +113,32 @@ function renderDashboard(view = currentView) {
   };
   dashboard.innerHTML = panels[view] || panels.home;
   bindViewActions(view);
+}
+
+
+function renderSpatialMissionControl() {
+  if (!spatialOrbit) return;
+  const snapshot = runtime.spatial.snapshot();
+  const targets = snapshot.targets.filter((x) => x.id !== 'pink-core');
+  spatialOrbit.textContent = '';
+  targets.forEach((target,index) => {
+    const button=document.createElement('button'); button.type='button'; button.className='spatial-node'; button.dataset.spatialTarget=target.id;
+    button.innerHTML='<small>'+escapeHtml(target.kind.toUpperCase())+'</small><strong>'+escapeHtml(target.label)+'</strong>';
+    const a=(index/targets.length)*Math.PI*2-Math.PI/2, rx=38, ry=31;
+    button.style.left=(50+Math.cos(a)*rx)+'%'; button.style.top=(50+Math.sin(a)*ry)+'%';
+    button.addEventListener('click',()=>{const ev=runtime.spatial.selectTarget(target.id,{evidenceRefs:['spatial-ui-selection']});spatialStatus.textContent='SELECTED · '+target.label.toUpperCase();window.dispatchEvent(new CustomEvent('pinknext:spatial-select',{detail:ev}));});
+    spatialOrbit.appendChild(button);
+  });
+  if(spatialStatus) spatialStatus.textContent=snapshot.pose.source.toUpperCase()+' · '+snapshot.quality.toUpperCase();
+}
+function setSpatialPointer(event){
+  if(shell.dataset.spatial!=='on'||!spatialStage)return;
+  const r=spatialStage.getBoundingClientRect(); if(!r.width||!r.height)return;
+  const x=((event.clientX-r.left)/r.width-.5)*2,y=((event.clientY-r.top)/r.height-.5)*2;
+  runtime.spatial.setPointer({x,y,source:event.pointerType==='touch'?'touch':'pointer'});
+  const t=runtime.spatial.sceneTransform(),core=spatialStage.querySelector('.spatial-core');
+  if(core)core.style.transform='translate(calc(-50% + '+(t.parallaxX*90).toFixed(1)+'px),calc(-50% + '+(t.parallaxY*70).toFixed(1)+'px)) translateZ('+(t.depth*100).toFixed(1)+'px)';
+  if(spatialStatus)spatialStatus.textContent=runtime.spatial.snapshot().pose.source.toUpperCase()+' · '+runtime.spatial.snapshot().quality.toUpperCase();
 }
 
 function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c])); }
@@ -229,6 +259,10 @@ prompt.addEventListener('keydown', (event) => { if (event.key === 'Enter' && !ev
 document.querySelectorAll('.nav-item').forEach((button) => button.addEventListener('click', () => {
   document.querySelectorAll('.nav-item').forEach((el) => el.classList.remove('active')); button.classList.add('active'); renderDashboard(button.dataset.view);
 }));
+
+spatialToggle?.addEventListener('click',()=>{const on=shell.dataset.spatial!=='on';shell.dataset.spatial=on?'on':'off';spatialToggle.setAttribute('aria-pressed',String(on));spatialStage.hidden=!on;if(on)renderSpatialMissionControl();});
+spatialStage?.addEventListener('pointermove',setSpatialPointer,{passive:true});
+spatialStage?.addEventListener('pointerleave',()=>{runtime.spatial.setPointer({x:0,y:0});const core=spatialStage.querySelector('.spatial-core');if(core)core.style.transform='translate(-50%,-50%)';},{passive:true});
 
 modeToggle.addEventListener('click', () => {
   const next = shell.dataset.mode === 'pink-only' ? 'command-center' : 'pink-only';
