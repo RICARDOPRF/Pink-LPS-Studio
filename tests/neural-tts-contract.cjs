@@ -1,0 +1,18 @@
+'use strict';
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const client=fs.readFileSync('voice/pink-neural-tts.js','utf8');
+const supervisor=fs.readFileSync('runtime/pink-supervisor-voice.js','utf8');
+const config=fs.readFileSync('pink-public-config.js','utf8');
+const html=fs.readFileSync('index.html','utf8');
+assert.match(client,/provider:'gemini-tts'/);
+assert.match(client,/audio\/pcm;rate=24000|sampleRate/);
+assert.match(client,/functions\.v1|functions\/v1/);
+assert.match(supervisor,/PinkNeuralTTS\?\.speak/);
+assert.match(supervisor,/browserSpeak/);
+assert.match(config,/tts:'pink-tts'/);
+assert.match(config,/gemini-3\.1-flash-tts-preview/);
+assert.match(config,/voiceName:'Aoede'/);
+assert.match(html,/voice\/pink-neural-tts\.js/);
+assert.ok(html.indexOf('voice/pink-neural-tts.js')<html.indexOf('runtime/pink-supervisor-voice.js'),'neural TTS must load before supervisor voice');
+console.log('Pink neural TTS routing contracts: PASS');
